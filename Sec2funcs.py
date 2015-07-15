@@ -508,8 +508,8 @@ def SS(params, b_guess, graphs):
     p_tilde_ss = get_p_tilde(alpha, p_c1_ss, p_c2_ss)
     c_ss, c_constr = get_cvec_ss(S, r_ss, w_ss, b_ss, cbar1, cbar2, p_c1_ss, p_c2_ss, p_tilde_ss) # this gives composite consumption
     C_ss = get_C(c_ss)
-    c1_ss = c_ss*alpha + cbar1 # should make these functions and handle all goods at ones (array operations)
-    c2_ss = c_ss*(1-alpha) + cbar2
+    c1_ss = (p_tilde_ss*c_ss*alpha)/p_c1_ss + cbar1 # should make these functions and handle all goods at ones (array operations)
+    c2_ss = (p_tilde_ss*c_ss*(1-alpha))/p_c2_ss + cbar2
     C1_ss = get_C(c1_ss)
     C2_ss = get_C(c2_ss)
     b_err_params = np.array([S, beta, sigma])
@@ -522,6 +522,7 @@ def SS(params, b_guess, graphs):
     print('cons prices')
     print(p_c1_ss)
     print(p_c2_ss)
+    print(p_tilde_ss)
     # if graphs == True:
     #     # Plot steady-state distribution of savings
     #     svec = np.linspace(1, S, S)
