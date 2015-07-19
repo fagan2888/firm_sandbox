@@ -1,12 +1,13 @@
 Version 1:
 - 1.0 : S period, J types, endog labor, mortality risk, warm glow from intentional bequests only.  Works.
 - 1.1 : change solution have to do with guess of r, w.  Works, but note that with just fsolve guessing r and w, initial values are very important
-- 1.2 : use better method to update r, w so initial value are more robust ** I'm having a hard time updating r and w - Evan's method gets me stuck.  Why?
+- 1.1.1 : Extend 1.1 to solve the lifecycle problem of agent of each type J separately.  Works for all J types having same ability.  Can't find initial guesses that come to solution with ability types differing over J if e is far apart.  Was able to get it more robust by updating the initial guess based on solution to abilty type just before in loop.  Works.
+- 1.2 : use better method to update r, w so initial value are more robust ** I'm having a hard time updating r and w - Evan's method gets me stuck.  Why?  Need to fix how matrices computed and update initial guesses.
 
 
 Adding two firms:
 - 2.0: Extension of 1.1 to have CES production.  Works, but solution sensitive to guesses of K,L for inner fsolve of hh problem.
-- 2.1: Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output
+- 2.1: Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output.  All functions appear to return correct values, but problem solving.  I think it has to do with poor initial values or fsolve not making reasonable guesses - need to be able to kick back results that don't make sense.
 - 2.2: Extension of 2.1 to have 2 firms, cbar != 0
 - 2.3 Extend 2.2 to have fixed coeff matrix mapping outputs to cons goods
 - 2.4 Try to do the sol'n with market clearing conditions instead of "new r/w" to see how it works
@@ -14,7 +15,10 @@ Adding two firms:
 - 2.5: change sol'n method in how r and w updated (try to do what attempting in 1.2)
 - 2.6: increase number of industries and consumption goods to general numbers
 
-
+** Let me go back and do infinite horizon model with 2 firms, building up from scatch.  This will help since should be able to solve by hand for ss, so can tell if the above issues are with specification or with solver/initial values
+** The other thing to try to to do break up the inner loop
+	- solve HH problem separately for each j (still method 2)
+	- solve HH problem by backwards induction (method 3) - should be most robust
 
 Things to add to Rick's code:
 - CES production

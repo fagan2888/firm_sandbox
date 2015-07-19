@@ -178,7 +178,8 @@ def get_p_c(r, w):
     return p_c
     
 def get_p_tilde(p_c1, p_c2):
-    p_tilde = ((p_c1/alpha)**alpha)*((p_c2/(1-alpha))**(1-alpha))
+    #p_tilde = ((p_c1/alpha)**alpha)*((p_c2/(1-alpha))**(1-alpha))
+    p_tilde = ((p_c1/alpha)**alpha)
     return p_tilde
 
 def MUc(c):
@@ -331,6 +332,7 @@ def solve_hh(guesses, r, w, p_c1, p_c2, p_tilde):
     error2[mask3] += 1e9
     # mask4 = np.diff(L_guess) > 0
     # error2[mask4] += 1e9
+    #return list(k.flatten()) + list(n.flatten()) 
     #print'max euler error', np.array(list(error1.flatten()) + list(error2.flatten())).max()
     return list(error1.flatten()) + list(error2.flatten()) + list(error3.flatten()) 
 
@@ -361,16 +363,19 @@ def Steady_State(guesses):
     p_tilde = get_p_tilde(p_c1,p_c2)
 
     # Make initial guesses for capital and labor
-    K_guess_init = np.ones((S, J)) * 0.05
+    K_guess_init = np.ones((S, J)) * 0.01
     L_guess_init = np.ones((S, J)) * 0.3
     guesses = np.append(K_guess_init, L_guess_init)
     solutions = opt.fsolve(solve_hh, guesses, args=(r, w, p_c1, p_c2, p_tilde), xtol=1e-9, col_deriv=1)
-    #solutions = solve_hh(guesses,r, w)
-    #out = opt.fsolve(solve_hh, guesses, args=(r, w), xtol=1e-9, col_deriv=1, full_output=1)
+    #solutions = solve_hh(guesses,r, w, p_c1, p_c2, p_tilde)
+    #out = opt.fsolve(solve_hh, guesses, args=(r, w, p_c1, p_c2, p_tilde), xtol=1e-9, col_deriv=1, full_output=1)
     #print'solution found flag', out[2], out[3]
     #solutions = out[0]
-    k = solutions[0:S * J].reshape(S, J)
-    n = solutions[S * J:].reshape(S, J)
+    #k = solutions[0:S * J].reshape(S, J)
+    #n = solutions[S * J:].reshape(S, J)
+    k = np.array(solutions[0:S * J]).reshape(S,J)
+    n = np.array(solutions[S * J:]).reshape(S,J)
+
 
     # Find consumption from HH in SS
     BQ = get_BQ(r, k)
@@ -380,6 +385,7 @@ def Steady_State(guesses):
     c = get_cons(w, r, n, k0, k, bq, p_c1, p_c2, p_tilde)
     c1 = (p_tilde*c*alpha)/p_c1 + cbar1
     c2 = (p_tilde*c*(1-alpha))/p_c2 + cbar2
+
 
     # Find total consumption of each good
     C1 = get_C(c1)
@@ -398,31 +404,29 @@ def Steady_State(guesses):
     K, K_constr = get_K(k)
     L = get_L(n)
 
-    #### Need to solve for K1, L1 here
-    K1 = (X1/(X1+X2))*K
-    L1 = (X1/(X1+X2))*L
-    K2 = K -K1
-    L2 = L-L1
+    # Find demand for labor and capital from each industry
+    K1 = (gamma*X1)/(((r+delta)**(epsilon))*(A**(1-epsilon)))
+    K2 = (gamma*X2)/(((r+delta)**(epsilon))*(A**(1-epsilon)))
+    L1 = ((1-gamma)*X1)/(w*(A**(1-epsilon)))
+    L2 = ((1-gamma)*X2)/(w*(A**(1-epsilon)))
 
-    # Find interst rate and wage rate implied by the sol'n    
-    r_new = get_r(X1,K1)
-    w_new = get_w(X1,L1)
-
-    error1 = r_new-r 
-    error2 = w_new-w
+    # Check market clearing   
+    error1 = K-K1-K2
+    error2 = L-L1-L2
 
 
     # Check and punish constraing violations
-    if r_new <= 0:
+    if r <= 0:
         error1 += 1e9
-    if r_new > 1:
+    if r > 1:
         error1 += 1e9
-    if w_new <= 0:
+    if w <= 0:
         error2 += 1e9
     #print('errors')
     #print(error1)
     #print(error2)
-    return [error1, error2]
+    return [r, w]
+    #return [error1, error2]
     
 
 # Make initial guesses for factor prices
@@ -442,7 +446,7 @@ p_c2_ss = get_p_c(rss,wss)
 p_tilde_ss = get_p_tilde(p_c1_ss,p_c2_ss)
 print 'SS cons prices: ', p_c1_ss, p_c2_ss, p_tilde_ss
 
-K_guess_init = np.ones((S, J)) * 0.05
+K_guess_init = np.ones((S, J)) * 0.01
 L_guess_init = np.ones((S, J)) * 0.3
 guesses = np.append(K_guess_init, L_guess_init)
 ss_vars = opt.fsolve(solve_hh, guesses, args=(rss, wss, p_c1_ss, p_c2_ss, p_tilde_ss), xtol=1e-9, col_deriv=1)

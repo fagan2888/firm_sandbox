@@ -387,4 +387,6 @@ print(error1)
 print(error2)
 print(error3)
 
+print 'Kssmat: ', Kssmat
+
 
