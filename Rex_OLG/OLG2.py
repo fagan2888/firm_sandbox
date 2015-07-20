@@ -9,8 +9,8 @@ This is the main executable file
 
 _______Files this function calls________
 SS_func.py  - contains all the functions for the steady state calculations
-    get_wage- Paramaters: kvec, lvec
-    get_rate-
+    get_wage
+    get_rate
 TPI_func.py - contains all the functions for the tpi calculations
 
 __________Functions in this file_______
@@ -49,7 +49,6 @@ labor_guess = .8
 cap_guess = .05
 error = 1
 show_graph = True
-
 
 
 
