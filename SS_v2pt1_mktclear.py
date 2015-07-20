@@ -79,7 +79,8 @@ nu = 2.0 # elasticity of labor supply
 chi_n = 0.5 #utility weight, disutility of labor
 chi_b = 0.2 #utility weight, warm glow bequest motive
 ltilde = 1.0 # maximum hours
-e = [0.5, 1.0, 1.2, 1.5] # effective labor units for the J types
+#e = [0.5, 1.0, 1.2, 1.5] # effective labor units for the J types
+e = [1.0, 1.0, 1.0, 1.0] # effective labor units for the J types
 S = 5 # periods in life of hh
 J = 4 # number of lifetime income groups
 surv_rate = np.array([0.99, 0.98, 0.6, 0.4, 0.0]) # probability of surviving to next period
@@ -363,7 +364,7 @@ def Steady_State(guesses):
     p_tilde = get_p_tilde(p_c1,p_c2)
 
     # Make initial guesses for capital and labor
-    K_guess_init = np.ones((S, J)) * 0.01
+    K_guess_init = np.ones((S, J)) * 0.5
     L_guess_init = np.ones((S, J)) * 0.3
     guesses = np.append(K_guess_init, L_guess_init)
     solutions = opt.fsolve(solve_hh, guesses, args=(r, w, p_c1, p_c2, p_tilde), xtol=1e-9, col_deriv=1)
@@ -446,7 +447,7 @@ p_c2_ss = get_p_c(rss,wss)
 p_tilde_ss = get_p_tilde(p_c1_ss,p_c2_ss)
 print 'SS cons prices: ', p_c1_ss, p_c2_ss, p_tilde_ss
 
-K_guess_init = np.ones((S, J)) * 0.01
+K_guess_init = np.ones((S, J)) * 0.05
 L_guess_init = np.ones((S, J)) * 0.3
 guesses = np.append(K_guess_init, L_guess_init)
 ss_vars = opt.fsolve(solve_hh, guesses, args=(rss, wss, p_c1_ss, p_c2_ss, p_tilde_ss), xtol=1e-9, col_deriv=1)

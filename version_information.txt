@@ -2,7 +2,7 @@ Version 1:
 - 1.0 : S period, J types, endog labor, mortality risk, warm glow from intentional bequests only.  Works.
 - 1.1 : change solution have to do with guess of r, w.  Works, but note that with just fsolve guessing r and w, initial values are very important
 - 1.1.1 : Extend 1.1 to solve the lifecycle problem of agent of each type J separately.  Works for all J types having same ability.  Can't find initial guesses that come to solution with ability types differing over J if e is far apart.  Was able to get it more robust by updating the initial guess based on solution to abilty type just before in loop.  Works.
-- 1.2 : use better method to update r, w so initial value are more robust ** I'm having a hard time updating r and w - Evan's method gets me stuck.  Why?  Need to fix how matrices computed and update initial guesses.
+- 1.2 : use better method to update r, w so initial value are more robust.  Got it to work, trick fixing a few errors about how arrays are broadcast and, importantly, updating guesses for each ability type based on solution to adjacent type.
 
 
 Adding two firms:

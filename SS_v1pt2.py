@@ -64,7 +64,7 @@ TPImindist   = Cut-off distance between iterations for TPI
 #computational parameters
 maxiter = 1000
 mindist_SS = 1e-9
-mu = 0.99
+mu = 0.5
 
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
@@ -76,6 +76,7 @@ chi_n = 0.5 #utility weight, disutility of labor
 chi_b = 0.2 #utility weight, warm glow bequest motive
 ltilde = 1.0 # maximum hours
 e = [0.5, 1.0, 1.2, 1.5] # effective labor units for the J types
+#e = [1.0, 1.0, 1.0, 1.0] # effective labor units for the J types
 S = 5 # periods in life of hh
 J = 4 # number of lifetime income groups
 surv_rate = np.array([0.99, 0.98, 0.6, 0.4, 0.0]) # probability of surviving to next period
@@ -134,7 +135,7 @@ def get_L(n):
 
     Returns:    Aggregate labor
     '''
-    L = np.sum(weights*n*e)
+    L = np.sum(weights*(n*e))
     return L
     
 def get_K(k):
@@ -187,7 +188,7 @@ def get_BQ(r, k, j):
     Returns:    Bequests by ability (Jx1)
     '''
 
-    output = (1 + r) * (k*weights[:,j]*mort_mat[:,j]).sum()
+    output = (1 + r) * (k*weights[:,j].reshape(S,1)*mort_mat[:,j].reshape(S,1)).sum()
 
     return output
     
@@ -200,7 +201,7 @@ def get_dist_bq(BQ,j):
     Returns:    Bequests by age and ability
     '''
     
-    output = np.tile(BQ/weights[:,j].sum(0),(S,1))
+    output = np.tile(BQ/(weights[:,j].sum(0)),(S,1))
 
     return output
     
@@ -330,14 +331,10 @@ def Steady_State(guesses, mu):
     dist_vec = np.zeros(maxiter)
     
     # Make initial guesses for capital and labor
-    K_guess_init = np.ones((S, J)) * 0.0000001
+    K_guess_init = np.ones((S, J)) * 0.05
     L_guess_init = np.ones((S, J)) * 0.3
     k = np.zeros((S,J)) # initialize k matrix
     n = np.zeros((S,J)) # initialize n matrix
-    c = np.zeros((S,J)) # initialize n matrix
-    error1_along = np.zeros((S-1,J)) # initialize foc k errors
-    error2_along = np.zeros((S,J)) # initialize foc k errors
-    error3_along = np.zeros((1,J)) # initialize foc k errors
     
     while (dist > mindist_SS) and (iteration < maxiter):
         
@@ -345,36 +342,17 @@ def Steady_State(guesses, mu):
         
         for j in xrange(J):
             # Solve the euler equations
-            #k_guess = K_guess_init[:,j]
-            #n_guess = L_guess_init[:,j]
-            #guesses = list(k_guess.flatten()) + list(n_guess.flatten())
-            guesses = np.append(K_guess_init[:, j], L_guess_init[:, j])
-            out = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1, full_output=1)
+            if j == 0:
+                guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
+            else:
+                guesses = np.append(k[:,(j-1)], n[:,(j-1)])
+            solutions = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1)
+            #out = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1, full_output=1)
             #print'solution found flag', out[2], out[3]
-            #solutions = solve_hh(guesses,r, w, j)
-            solutions = out[0]
-            k[:,j] = solutions[:S]
-            n[:,j] = solutions[S:]
-            BQ = get_BQ(r, k[:,j], j)
-            bq = get_dist_bq(BQ, j)
-            k0 = np.zeros((S,1))
-            k0[1:,0] = k[:-1,j] # capital start period with
-            c[:,j] = get_cons(w, r, n[:,j], k0[:,0], k[:,j], bq.reshape(1,S), j)
-            # check Euler errors
-            error1_along[:,j] = foc_k(r, c[:,j].reshape(S,1), j) 
-            error2_along[:,j] = foc_l(w, n[:,j].reshape(S,1), c[:,j].reshape(S,1), j).reshape(S) 
-            error3_along[:,j] = foc_bq(k[:,j].reshape(S,1), c[:,j].reshape(S,1)) 
-            #print 'max error by j', max(list(error1_along[:,j].flatten()) + list(error2_along[:,j].flatten()) + list(error3_along[:,j].flatten()))
+            #solutions = out[0]
+            k[:,j] = solutions[:S].reshape(S)
+            n[:,j] = solutions[S:].reshape(S)
 
-        #K_guess_init = np.ones((S, J)) * 0.05
-        #L_guess_init = np.ones((S, J)) * 0.3
-        #guesses = list(K_guess_init.flatten()) + list(L_guess_init.flatten()) 
-        #solutions = opt.fsolve(solve_hh_big, guesses, args=(r, w), xtol=1e-9, col_deriv=1)
-        #out = opt.fsolve(solve_hh, guesses, args=(r, w), xtol=1e-9, col_deriv=1, full_output=1)
-        #print'solution found flag', out[2], out[3]
-        #solutions = out[0]
-        #k = solutions[0:S * J].reshape(S, J)
-        #n = solutions[S * J:].reshape(S, J)
         
         K, K_constr = get_K(k)
         L = get_L(n)
@@ -382,31 +360,17 @@ def Steady_State(guesses, mu):
         r_new = get_r(Y,K)
         w_new = get_w(Y,L)
         
-        #print('printing k, n, c')
-        #print 'k', k   
-        #print 'n', n   
-        #print 'c', c  
-
-        #print('check r w')
-        #print(r)
-        #print(r_new)
-        #print(w)
-        #print(w_new)
-        #print('k and n from hh_solve')
-        #print(k)
-        #print(n)
-        print('max euler error along')
-        print(max(list(error1_along.flatten()) + list(error2_along.flatten()) + list(error3_along.flatten())))
+        
         r = mu*r_new + (1-mu)*r # so if r low, get low save, so low capital stock, so high mpk, so r_new bigger
         w = mu*w_new + (1-mu)*w
 
         dist = np.array([perc_dif_func(r_new, r)]+[perc_dif_func(w_new, w)]).max()
         
         dist_vec[iteration] = dist
-        #if iteration > 10:
-        #    if dist_vec[iteration] - dist_vec[iteration-1] > 0:
-        #        mu /= 2.0
-        #        print 'New value of mu:', mu
+        if iteration > 10:
+            if dist_vec[iteration] - dist_vec[iteration-1] > 0:
+                mu /= 2.0
+                print 'New value of mu:', mu
         iteration += 1
         print "Iteration: %02d" % iteration, " Distance: ", dist
 
@@ -424,51 +388,52 @@ solutions = Steady_State(guesses, mu)
 
 rss = solutions[0]
 wss = solutions[1]
+print 'rss, wss: ', rss, wss
 
-
-# Make initial guesses for capital and labor
-K_guess_init = np.ones((S, J)) * 0.00001
+K_guess_init = np.ones((S, J)) * 0.05
 L_guess_init = np.ones((S, J)) * 0.3
-Kssmat = np.zeros((S,J)) # initialize k matrix
-Lssmat = np.zeros((S,J)) # initialize n matrix
-Cssmat = np.zeros((S,J)) # initialize c matrix
-bqss_mat = np.zeros((S,J)) # initialize c matrix
+Kssmat = np.zeros((S, J))
+Lssmat = np.zeros((S, J))
+Cssmat = np.zeros((S, J))
 error1 = np.zeros((S-1,J)) # initialize foc k errors
 error2 = np.zeros((S,J)) # initialize foc k errors
 error3 = np.zeros((1,J)) # initialize foc k errors
 
-
 for j in xrange(J):
-    # Solve the euler equations
-    k_guess = K_guess_init[:,j]
-    n_guess = L_guess_init[:,j]
-    guesses = list(k_guess.flatten()) + list(n_guess.flatten())
-    solutions = opt.fsolve(solve_hh, guesses, args=(rss, wss, j), xtol=1e-13)
-    Kssmat[:,j] = solutions[:S]
-    Lssmat[:,j] = solutions[S:]
-    BQss = get_BQ(rss, Kssmat[:,j], j)
-    bqss = get_dist_bq(BQss, j)
-    bqss_mat[:,j] = bqss[:,0]
-    Kssmat0 = np.zeros((S,1))
-    Kssmat0[1:,0] = Kssmat[:-1,j] # capital start period with
-    Cssmat[:,j] = get_cons(wss, rss, Lssmat[:,j], Kssmat0[:,0], Kssmat[:,j], bqss.reshape(1,S), j)
-
+    if j == 0:
+        guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
+    else:
+        guesses = np.append(Kssmat[:,(j-1)], Lssmat[:,(j-1)])
+    #solutions = opt.fsolve(solve_hh, guesses, args=(rss, wss, j), xtol=1e-9, col_deriv=1)
+    out = opt.fsolve(solve_hh, guesses, args=(rss, wss, j), xtol=1e-9, col_deriv=1, full_output=1)
+   # print'solution found flag', out[2], out[3]
+    #print 'fsovle output: ', out[1]
+    solutions = out[0]
+    Kssmat[:,j] = solutions[:S].reshape(S)
+    Lssmat[:,j] = solutions[S:].reshape(S)
+    BQss = get_BQ(rss, Kssmat[:,j].reshape(S,1), j)
+    bqss = get_dist_bq(BQss, j).reshape(S,1)
+    k0ss = np.zeros((S,1))
+    k0ss[1:,0] = Kssmat[:-1,j] # capital start period with
+    Cssmat[:,j] = get_cons(wss, rss, Lssmat[:,j].reshape(S,1), k0ss[:,0].reshape(S,1), Kssmat[:,j].reshape(S,1), bqss, j).reshape(S)
     # check Euler errors
-    error1[:,j] = foc_k(rss, Cssmat[:,j].reshape(S,1), j) 
+    error1[:,j] = foc_k(rss, Cssmat[:,j].reshape(S,1), j).reshape(S-1) 
     error2[:,j] = foc_l(wss, Lssmat[:,j].reshape(S,1), Cssmat[:,j].reshape(S,1), j).reshape(S) 
-    error3[:,j] = foc_bq(Kssmat[:,j].reshape(S,1), Cssmat[:,j].reshape(S,1)) 
+    error3[:,j] = foc_bq(Kssmat[:,j].reshape(S,1), Cssmat[:,j].reshape(S,1))
 
-    
+
 Lss = get_L(Lssmat)  
 Kss, K_constr = get_K(Kssmat) 
 Yss = get_Y(Kss, Lss) 
+
 Css = np.sum(weights*Cssmat)
 
 print 'RESOURCE CONSTRAINT DIFFERENCE:', Yss - Css- delta*Kss
 
+# check Euler errors
 print("Euler errors")
-print(error1.max())
-print(error2.max())
-print(error3.max())
-print('max euler error at end')
-print(max(list(error1.flatten()) + list(error2.flatten()) + list(error3.flatten())))
+print(error1)
+print(error2)
+print(error3)
+
+print 'Kssmat: ', Kssmat

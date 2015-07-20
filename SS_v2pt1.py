@@ -79,7 +79,8 @@ nu = 2.0 # elasticity of labor supply
 chi_n = 0.5 #utility weight, disutility of labor
 chi_b = 0.2 #utility weight, warm glow bequest motive
 ltilde = 1.0 # maximum hours
-e = [0.5, 1.0, 1.2, 1.5] # effective labor units for the J types
+#e = [0.5, 1.0, 1.2, 1.5] # effective labor units for the J types
+e = [1.0, 1.0, 1.0, 1.0] # effective labor units for the J types
 S = 5 # periods in life of hh
 J = 4 # number of lifetime income groups
 surv_rate = np.array([0.99, 0.98, 0.6, 0.4, 0.0]) # probability of surviving to next period
@@ -142,7 +143,7 @@ def get_L(n):
 
     Returns:    Aggregate labor
     '''
-    L = np.sum(weights*n*e)
+    L = np.sum(weights*(n*e))
     return L
     
 def get_K(k):

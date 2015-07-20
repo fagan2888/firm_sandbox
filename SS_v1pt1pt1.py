@@ -224,7 +224,7 @@ def foc_k(r, c, j):
         Value of foc error ((S-1)xJ array)
     '''
 
-    error = MUc(c[:-1,:]) - (1+r)*beta*surv_mat[:-1,j].reshape(S-1,1)*MUc(c[1:,:]) 
+    error = MUc(c[:-1,0]) - (1+r)*beta*surv_mat[:-1,j]*MUc(c[1:,0]) 
     return error
 
 
@@ -267,29 +267,37 @@ def solve_hh(guesses, r, w, j):
                 Labor supply (Sx1)    
 
     '''
-    k = guesses[:S].reshape((S, 1))
-    n = guesses[S:].reshape((S, 1))
+    k = guesses[0: S].reshape((S, 1))
+    n = guesses[S:].reshape((S, 1))        
     BQ = get_BQ(r, k, j)
-    bq = get_dist_bq(BQ, j)
+    bq = get_dist_bq(BQ,j)
     k0 = np.zeros((S,1))
-    k0[1:,:] = k[:-1,:] # capital start period with
+    k0[1:,0] = k[:-1,0] # capital start period with
     c = get_cons(w, r, n, k0, k, bq, j)
     error1 = foc_k(r, c, j) 
     error2 = foc_l(w, n, c, j) 
-    error3 = foc_bq(k, c)  
+    error3 = foc_bq(k, c) 
 
     # Check and punish constraing violations
-    mask1 = n < 0
-    error2[mask1] += 1e9
+    mask1 = n <= 0
     mask2 = n > ltilde
-    error2[mask2] += 1e9
-    if k.sum() <= 0:
-        error1 += 1e9
-    mask3 = c < 0
-    error2[mask3] += 1e9
-    # mask4 = np.diff(L_guess) > 0
-    # error2[mask4] += 1e9
-    #print'max euler error', np.array(list(error1.flatten()) + list(error2.flatten())).max()
+    mask4 = c <= 0
+    mask3 = k < 0
+    #mask3 = k[:-1,0] <= 0
+    error2[mask1] += 1e14
+    error2[mask2] += 1e14
+    error1[mask3[:-1,0]] += 1e14
+    error1[mask4[:-1,0]] += 1e14
+    if k[-1,0] < 0:
+        error3 += 1e14
+    if c[-1,0] <= 0:
+        error3 += 1e14
+
+    #error3[mask3[-1,0]] += 1e14
+
+
+    #print('max euler error')
+    #print(max(list(error1.flatten()) + list(error2.flatten()) + list(error3.flatten())))
     return list(error1.flatten()) + list(error2.flatten()) + list(error3.flatten()) 
 
 
@@ -388,7 +396,6 @@ for j in xrange(J):
     k0ss = np.zeros((S,1))
     k0ss[1:,0] = Kssmat[:-1,j] # capital start period with
     Cssmat[:,j] = get_cons(wss, rss, Lssmat[:,j].reshape(S,1), k0ss[:,0].reshape(S,1), Kssmat[:,j].reshape(S,1), bqss, j).reshape(S)
-    print 'Cssmat: ', Cssmat[:,j]
     # check Euler errors
     error1[:,j] = foc_k(rss, Cssmat[:,j].reshape(S,1), j).reshape(S-1) 
     error2[:,j] = foc_l(wss, Lssmat[:,j].reshape(S,1), Cssmat[:,j].reshape(S,1), j).reshape(S) 
