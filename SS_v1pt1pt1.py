@@ -359,8 +359,8 @@ def Steady_State(guesses):
     
 
 # Make initial guesses for factor prices
-r_guess_init = 0.4
-w_guess_init = 1.0
+r_guess_init = 0.44
+w_guess_init = 0.53
 guesses = [r_guess_init, w_guess_init]
 
 # Solve SS
@@ -369,7 +369,7 @@ solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
 rss = solutions[0]
 wss = solutions[1]
 print 'rss, wss: ', rss, wss
- 
+
 K_guess_init = np.ones((S, J)) * 0.05
 L_guess_init = np.ones((S, J)) * 0.3
 Kssmat = np.zeros((S, J))
@@ -417,5 +417,3 @@ print(error2)
 print(error3)
 
 print 'Kssmat: ', Kssmat
-
-

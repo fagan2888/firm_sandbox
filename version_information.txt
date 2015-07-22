@@ -1,13 +1,15 @@
 Version 1:
 - 1.0 : S period, J types, endog labor, mortality risk, warm glow from intentional bequests only.  Works.
 - 1.1 : change solution have to do with guess of r, w.  Works, but note that with just fsolve guessing r and w, initial values are very important
-- 1.1.1 : Extend 1.1 to solve the lifecycle problem of agent of each type J separately.  Works for all J types having same ability.  Can't find initial guesses that come to solution with ability types differing over J if e is far apart.  Was able to get it more robust by updating the initial guess based on solution to abilty type just before in loop.  Works.
+- 1.1.1 : Extend 1.1 to solve the lifecycle problem of agent of each type J separately.  Works for all J types having same ability.  Can't find initial guesses that come to solution with ability types differing over J if e is far apart.  Was able to get it more robust by updating the initial guess based on solution to abilty type just before in loop.  Works, but it sensitive to initial guesses at r, w
+- 1.1.2: extends 1.1.1, but with market clearing rather than differences in r, w as the error terms in the SS fsolve.  Works and gives same solution as 1.1.1.  However, note that you need to have as an equation the production function (in some transformation) just getting demand for output and using the FOCS to imply K and L demand is not enough and means the resource constraint won't be satisfied.
 - 1.2 : use better method to update r, w so initial value are more robust.  Got it to work, trick fixing a few errors about how arrays are broadcast and, importantly, updating guesses for each ability type based on solution to adjacent type.
 
 
 Adding two firms:
 - 2.0: Extension of 1.1 to have CES production.  Works, but solution sensitive to guesses of K,L for inner fsolve of hh problem.
-- 2.1: Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output.  All functions appear to return correct values, but problem solving.  I think it has to do with poor initial values or fsolve not making reasonable guesses - need to be able to kick back results that don't make sense.
+- 2.1 Extension of 2.0 Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output.  Trying to solve by having diff btwn r and r_new, w and w_new be zero.  Solves for SS, clearing RC and small euler errors, BUT gives different answer than 2.1_mktclear below (though in the ball park) AND markets not clearing.  Also, still not seeming robust to changes in alpha. (works with alpha=1, 0.9, but not alpha = 0.5)
+- 2.1_mktclear: Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output - use market clearing condition rather than update of interest rates in outer loop.  Got to work with alpha=1, 0.9, 0.91 -  but not with 0.1, 0.2. 0.3, 0.4, 0.5, 0.8, 0.85, 0.88, 0.89, 0.899, 0.92.  Trouble with other alphas - guessing due to initial guesses of r, w - how get this to be more robust?	
 - 2.2: Extension of 2.1 to have 2 firms, cbar != 0
 - 2.3 Extend 2.2 to have fixed coeff matrix mapping outputs to cons goods
 - 2.4 Try to do the sol'n with market clearing conditions instead of "new r/w" to see how it works
@@ -16,9 +18,17 @@ Adding two firms:
 - 2.6: increase number of industries and consumption goods to general numbers
 
 ** Let me go back and do infinite horizon model with 2 firms, building up from scatch.  This will help since should be able to solve by hand for ss, so can tell if the above issues are with specification or with solver/initial values
+
+To do:
+** See if change change 1.1.1 to solve using market clearing rather than differnces between factor prices at each iteration.
 ** The other thing to try to to do break up the inner loop
 	- solve HH problem separately for each j (still method 2)
+Got this working in v1.1.1 and v1.2 (just different methods to find eq'm r,w).  Build off this with firm problem.  Might help since 2.0 so sensitive to initial guesses
+
 	- solve HH problem by backwards induction (method 3) - should be most robust
+
+If this fails:
+** Let me go back and do infinite horizon model with 2 firms, building up from scatch.  This will help since should be able to solve by hand for ss, so can tell if the above issues are with specification or with solver/initial values
 
 Things to add to Rick's code:
 - CES production
