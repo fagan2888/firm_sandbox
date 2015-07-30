@@ -72,8 +72,9 @@ cbar2 = 0.000 #min cons of good 2
 delta = 0.1 # depreciation rate
 A = 1.0 # Total factor productivity
 gamma = 0.3 # capital's share of output
-#xi = np.array([[0.2, 0.8],[0.3, 0.7]]) # fixed coeff input-output matrix
-xi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff input-output matrix
+xi = np.array([[0.2, 0.8],[0.3, 0.7]]) # fixed coeff input-output matrix
+pi = np.array([[0.5, 0.5],[0.1, 0.9]]) # fixed coeff pce-bridge matrix relating output and cons goods
+#xi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff input-output matrix
 #xi = np.array([[0.0, 1.0],[0.0, 1.0]]) # fixed coeff input-output matrix
 epsilon = 0.6 # elasticity of substitution between capital and labor
 nu = 2.0 # elasticity of labor supply 
@@ -181,7 +182,6 @@ def get_p_c(r, w):
     
 def get_p_tilde(p_c1, p_c2):
     p_tilde = ((p_c1/alpha)**alpha)*((p_c2/(1-alpha))**(1-alpha))
-
     return p_tilde
 
 def MUc(c):
@@ -387,8 +387,6 @@ def Steady_State(guesses):
     p_c2 = get_p_c(r,w)
     p_tilde = get_p_tilde(p_c1,p_c2)
 
-    print 'prices ', p_c1, p_c2, p_tilde
-
     # Make initial guesses for capital and labor
     K_guess_init = np.ones((S, J)) * 0.05
     L_guess_init = np.ones((S, J)) * 0.3
@@ -417,16 +415,14 @@ def Steady_State(guesses):
 
     c1 = (p_tilde*c*alpha)/p_c1 + cbar1
     c2 = (p_tilde*c*(1-alpha))/p_c2 + cbar2
-    #print 'cons: ', c1, c2
 
     # Find total consumption of each good
     C1 = get_C(c1)
     C2 = get_C(c2)
-    #print 'consumptions: ', C1, C2
 
     # Find total demand for output from each sector from consumption
-    X_c_1 = C1
-    X_c_2 = C2
+    X_c_1 = pi[0,0]*C1 + pi[1,0]*C2
+    X_c_2 = pi[0,1]*C1 + pi[1,1]*C2
 
     guesses = [(X_c_1+X_c_2)/2, (X_c_1+X_c_2)/2]
     x_sol = opt.fsolve(solve_output, guesses, args=(w, r, X_c_1, X_c_2), xtol=1e-9, col_deriv=1)
@@ -519,8 +515,8 @@ C1ss = get_C(c1ss)
 C2ss = get_C(c2ss)
 
 # Find total demand for output from each sector from consumption
-X_c_1_ss = C1ss
-X_c_2_ss = C2ss
+X_c_1_ss = pi[0,0]*C1ss + pi[1,0]*C2ss
+X_c_2_ss = pi[0,1]*C1ss + pi[1,1]*C2ss
 
 print 'X_c_2_ss', X_c_2_ss
 
@@ -570,8 +566,8 @@ I2ss = delta*get_k_demand(wss,rss,X2_ss)
 print 'RESOURCE CONSTRAINT DIFFERENCE:'
 print 'RC1: ', X1_ss - Y1ss
 print 'RC2: ', X2_ss - Y2ss
-print 'RC1: ', X1_ss - C1ss- delta*K1_d_ss*xi[0,0] - delta*K2_d_ss*xi[1,0]
-print 'RC2: ', X2_ss - C2ss- delta*K1_d_ss*xi[0,1] - delta*K2_d_ss*xi[1,1]
+print 'RC1: ', X1_ss - X_c_1_ss- delta*K1_d_ss*xi[0,0] - delta*K2_d_ss*xi[1,0]
+print 'RC2: ', X2_ss - X_c_2_ss - delta*K1_d_ss*xi[0,1] - delta*K2_d_ss*xi[1,1]
 
 
 print("Euler errors")
