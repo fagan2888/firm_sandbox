@@ -187,7 +187,7 @@ def get_p(r, w):
 
     Returns: p_c
     '''
-    p = (A**(epsilon-1))*(((1-gamma)*(w**(1-epsilon))) + (gamma*((r+delta)**(1-epsilon))))
+    p = (((1-gamma)*((w/A)**(1-epsilon)))+(gamma*(((r+delta)/A)**(1-epsilon))))**(1/(1-epsilon))
 
     return p
 
@@ -308,7 +308,7 @@ def foc_k(r, c, j):
     return error
 
 
-def foc_l(w, L_guess, c, j):
+def foc_l(w, L_guess, c, p_tilde, j):
     '''
     Parameters:
         w        = wage rate (scalar)
@@ -321,10 +321,10 @@ def foc_l(w, L_guess, c, j):
         Value of foc error (SxJ array)
     '''
     
-    error = w*MUc(c)*e[j] + MUl(L_guess) 
+    error = (w*MUc(c)*e[j])/p_tilde + MUl(L_guess) 
     return error
 
-def foc_bq(K_guess, c):
+def foc_bq(K_guess, c, p_tilde):
     '''
     Parameters:
         w        = wage rate (scalar)
@@ -337,7 +337,7 @@ def foc_bq(K_guess, c):
     Returns:
         Value of Euler error.
     '''
-    error = MUc(c[-1,:]) -  MUb(K_guess[-1, :])
+    error = MUc(c[-1,:])/p_tilde -  MUb(K_guess[-1, :])
     return error
 
 
@@ -356,8 +356,8 @@ def solve_hh(guesses, r, w, p_c, p_tilde, j):
     k0[1:,0] = k[:-1,0] # capital start period with
     c = get_cons(w, r, n, k0, k, bq, p_c, p_tilde, j)
     error1 = foc_k(r, c, j) 
-    error2 = foc_l(w, n, c, j) 
-    error3 = foc_bq(k, c) 
+    error2 = foc_l(w, n, c, p_tilde, j) 
+    error3 = foc_bq(k, c, p_tilde) 
 
     # Check and punish constraing violations
     mask1 = n <= 0
@@ -515,8 +515,8 @@ for j in xrange(J):
     css[:,j] = get_cons(wss, rss, nss[:,j].reshape(S,1), k0ss[:,0].reshape(S,1), kss[:,j].reshape(S,1), bqss, p_c_ss, p_tilde_ss, j).reshape(S)
     # check Euler errors
     error1[:,j] = foc_k(rss, css[:,j].reshape(S,1), j).reshape(S-1) 
-    error2[:,j] = foc_l(wss, nss[:,j].reshape(S,1), css[:,j].reshape(S,1), j).reshape(S) 
-    error3[:,j] = foc_bq(kss[:,j].reshape(S,1), css[:,j].reshape(S,1))
+    error2[:,j] = foc_l(wss, nss[:,j].reshape(S,1), css[:,j].reshape(S,1), p_tilde_ss, j).reshape(S) 
+    error3[:,j] = foc_bq(kss[:,j].reshape(S,1), css[:,j].reshape(S,1), p_tilde_ss)
 
 c_i_ss = ((p_tilde_ss*np.tile(css,(2,1,1))*np.tile(np.reshape(alpha,(2,1,1)),(1,S,J)))/np.tile(np.reshape(p_c_ss,(2,1,1)),(1,S,J)) 
                 + np.tile(np.reshape(cbar,(2,1,1)),(1,S,J)))

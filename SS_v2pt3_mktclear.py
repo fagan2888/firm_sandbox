@@ -177,7 +177,7 @@ def get_p_c(r, w):
 
     Returns: p_c
     '''
-    p_c = (A**(epsilon-1))*(((1-gamma)*(w**(1-epsilon))) + (gamma*((r+delta)**(1-epsilon))))
+    p_c = (((1-gamma)*((w/A)**(1-epsilon)))+(gamma*(((r+delta)/A)**(1-epsilon))))**(1/(1-epsilon))
     return p_c
     
 def get_p_tilde(p_c1, p_c2):
@@ -287,7 +287,7 @@ def foc_k(r, c, j):
     return error
 
 
-def foc_l(w, L_guess, c, j):
+def foc_l(w, L_guess, c, p_tilde, j):
     '''
     Parameters:
         w        = wage rate (scalar)
@@ -300,10 +300,10 @@ def foc_l(w, L_guess, c, j):
         Value of foc error (SxJ array)
     '''
     
-    error = w*MUc(c)*e[j] + MUl(L_guess) 
+    error = (w*MUc(c)*e[j])/p_tilde + MUl(L_guess) 
     return error
 
-def foc_bq(K_guess, c):
+def foc_bq(K_guess, c, p_tilde):
     '''
     Parameters:
         w        = wage rate (scalar)
@@ -316,7 +316,7 @@ def foc_bq(K_guess, c):
     Returns:
         Value of Euler error.
     '''
-    error = MUc(c[-1,:]) -  MUb(K_guess[-1, :])
+    error = MUc(c[-1,:])/p_tilde -  MUb(K_guess[-1, :])
     return error
 
 
@@ -335,8 +335,8 @@ def solve_hh(guesses, r, w, p_c1, p_c2, p_tilde, j):
     k0[1:,0] = k[:-1,0] # capital start period with
     c = get_cons(w, r, n, k0, k, bq, p_c1, p_c2, p_tilde, j)
     error1 = foc_k(r, c, j) 
-    error2 = foc_l(w, n, c, j) 
-    error3 = foc_bq(k, c) 
+    error2 = foc_l(w, n, c, p_tilde, j) 
+    error3 = foc_bq(k, c, p_tilde) 
 
     # Check and punish constraing violations
     mask1 = n <= 0
@@ -504,8 +504,8 @@ for j in xrange(J):
     css[:,j] = get_cons(wss, rss, nss[:,j].reshape(S,1), k0ss[:,0].reshape(S,1), kss[:,j].reshape(S,1), bqss, p_c1_ss, p_c2_ss, p_tilde_ss, j).reshape(S)
     # check Euler errors
     error1[:,j] = foc_k(rss, css[:,j].reshape(S,1), j).reshape(S-1) 
-    error2[:,j] = foc_l(wss, nss[:,j].reshape(S,1), css[:,j].reshape(S,1), j).reshape(S) 
-    error3[:,j] = foc_bq(kss[:,j].reshape(S,1), css[:,j].reshape(S,1))
+    error2[:,j] = foc_l(wss, nss[:,j].reshape(S,1), css[:,j].reshape(S,1), p_tilde_ss, j).reshape(S) 
+    error3[:,j] = foc_bq(kss[:,j].reshape(S,1), css[:,j].reshape(S,1), p_tilde_ss)
 
 c1ss = (p_tilde_ss*css*alpha)/p_c1_ss + cbar1
 c2ss = (p_tilde_ss*css*(1-alpha))/p_c2_ss + cbar2
