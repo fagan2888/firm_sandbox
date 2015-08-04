@@ -17,8 +17,8 @@ Adding two firms:
 
 
 Adding dynamic firms:
-- 3.0: Extend 2.5_mktclear to have dynamic firms.  Test with two firms first.  Asset and labor market clearing.
-- 3.1: Extend 3.0 to have ....
+- 3.0: Extend 2.1_mktclear to have dynamic firms.  Test with two firms first.  Asset and labor market clearing.  Works.
+- 3.1: Extend 3.0 to have M firms (so similar to 2.5, but with dynamic firms)
 
 
 Transition path:
