@@ -4,7 +4,7 @@ import sys
 
 '''
 Author: Rex McArthur
-Last edited August 5, 2015
+Last edited August 6, 2015
 
 This is intended to be a explicitly typed two firm steady state solver.
 Firms will differentiate with different epsilon values, and productivity
@@ -31,6 +31,7 @@ cbar1       = min of product 1 in composite good
 cbar2       = min of product 2 in composite good
 chi_b       = utility weight warm glow
 chi_n       = utility weight disutility of labor
+ltilde      = Max labor endowed
 '''
 S = 10 #periods
 J = 4  #Ability groups
@@ -49,6 +50,8 @@ cbar1 = 0. #min of product 1
 cbar2 = 0. #min of product 2   
 chi_b = 0.2 #utility weight for bequest 
 chi_n = 0.5 #disutility weight for labor
+ltilde = 1. #Max labor endowment 
+nu = 1.9
 
 
 #Logical checks
@@ -77,11 +80,15 @@ def get_p_tilde(p1, p2):
 
 
 def consump(w, r, n, k0, k, p1, p2, p_tilde, j):
-    print n.shape
-    print k0.shape
-    print k.shape
+    k_0 = np.zeros(S)
+    k_0[:-1] = k0
+    k_1 = np.zeros(S)
+    k_1[:-1]=k
+    #print n.shape
+    #print k_0.shape
+    #print k_1.shape
 
-    c = (((1+r)*k0) + w*n*e[j] - k - (p1*cbar1) - (p2*cbar2)/p_tilde)
+    c = (((1+r)*k_0) + w*n*e[j] - k_1 - (p1*cbar1) - (p2*cbar2)/p_tilde)
     return c
 
 def MUc(c):
@@ -107,7 +114,7 @@ def k_error(r,c,j):
     
     returns the k error for the inner fsolve
     '''
-    kerror = MUc(c[:-1,0]) - (1+r)*beta*MUc(c[1:,0])
+    kerror = MUc(c[:-1]) - (1+r)*beta*MUc(c[1:])
     return kerror
 
 def l_error(w, L_guess, c, p_tilde, j):
@@ -126,21 +133,21 @@ def solve_house(guessvec, r, w, p1, p2, p_tilde, j):
     '''
     '''
     n = guessvec[0:S]
-    print'n', n, n.shape
+    #print'n', n, n.shape
     k = guessvec[S:]
-    print'k', k, k.shape
+    #print'k', k, k.shape
 
     k0 = np.zeros((S-1,1))
-    print k0.shape
-    print k0[1:,0].shape
-    print k[:-1].shape
+    #print k0.shape
+    #print k0[1:,0].shape
+    #print k[:-1].shape
     k0[1:,0] = k[:-1]
     k0 = k0.flatten()
-    print k0
+    #print k0
     c = consump(w,r,n,k0,k,p1,p2,p_tilde,j)
-    print c
+    #print c
     kerror = k_error(r,c,j)
-    lerror = l_error(w,L_guess,c,p_tilde,j)
+    lerror = l_error(w,n,c,p_tilde,j)
 
     #Duct Tape
     mask1 = n < 0
@@ -149,8 +156,8 @@ def solve_house(guessvec, r, w, p1, p2, p_tilde, j):
     mask4 = c <= 0
     lerror[mask1] += 1e10
     lerror[mask2] += 1e10
-    kerror[mask3[:-1,0]] += 1e10
-    kerror[mask4[:-1,0]] += 1e10
+    kerror[mask3[:-1]] += 1e10
+    kerror[mask4[:-1]] += 1e10
     
     totalerror =  list(kerror)+list(lerror)
     print totalerror
@@ -173,7 +180,6 @@ guessvec[:S] = nguess
 guessvec[S:] = kguess
 
 
-for j in xrange(J):
-    x = optimize.fsolve(solve_house, guessvec, args =(rguess, wguess, p1, p2, p_tilde, j))
+x = optimize.fsolve(solve_house, guessvec, args =(rguess, wguess, p1, p2, p_tilde, 1))
 
 
