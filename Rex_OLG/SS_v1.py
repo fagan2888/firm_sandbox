@@ -36,6 +36,7 @@ S = 10 #periods
 J = 4  #Ability groups
 T = 25 #Time to Steady State  
 A = 1.0 # Total Factor of Productivity 
+e = [.8, 1.0, 1.5, 1.2]
 bin_weights = [.25, .25, .25, .25] #Weights for ability gropus
 gamma = .5 #Capital share of output  
 epsilon = .6 #Elasticity of Substitution between capital and labor
@@ -76,6 +77,9 @@ def get_p_tilde(p1, p2):
 
 
 def consump(w, r, n, k0, k, p1, p2, p_tilde, j):
+    print n.shape
+    print k0.shape
+    print k.shape
 
     c = (((1+r)*k0) + w*n*e[j] - k - (p1*cbar1) - (p2*cbar2)/p_tilde)
     return c
@@ -121,11 +125,20 @@ def l_error(w, L_guess, c, p_tilde, j):
 def solve_house(guessvec, r, w, p1, p2, p_tilde, j):
     '''
     '''
-    k = guessvec[0:S]
-    n = guesses[S:]
-    k0 = np.zeros((S,1))
-    k0[1:,0] = k[:-1,0]
+    n = guessvec[0:S]
+    print'n', n, n.shape
+    k = guessvec[S:]
+    print'k', k, k.shape
+
+    k0 = np.zeros((S-1,1))
+    print k0.shape
+    print k0[1:,0].shape
+    print k[:-1].shape
+    k0[1:,0] = k[:-1]
+    k0 = k0.flatten()
+    print k0
     c = consump(w,r,n,k0,k,p1,p2,p_tilde,j)
+    print c
     kerror = k_error(r,c,j)
     lerror = l_error(w,L_guess,c,p_tilde,j)
 
@@ -138,21 +151,29 @@ def solve_house(guessvec, r, w, p1, p2, p_tilde, j):
     lerror[mask2] += 1e10
     kerror[mask3[:-1,0]] += 1e10
     kerror[mask4[:-1,0]] += 1e10
-    return list(kerror)+list(lerror)
+    
+    totalerror =  list(kerror)+list(lerror)
+    print totalerror
+    return totalerror
 
 
 #Make an intial guess for r and w
-r = .2
-w = 1.3
+rguess = .2
+wguess = 1.3
+kguess = .1
+nguess = .4
 
-p1 = get_p(r,w)
-p2 = get_p(r,w)
+p1 = get_p(rguess,wguess)
+p2 = get_p(rguess,wguess)
 print p1, p2
 p_tilde = get_p_tilde(p1,p2)
 print p_tilde
+guessvec = np.ones(2*S-1)
+guessvec[:S] = nguess
+guessvec[S:] = kguess
 
 
 for j in xrange(J):
-    x = optimize.fsolve(solve_house, guessvec, args =(r, w, p1, p2, p_tilde, j))
+    x = optimize.fsolve(solve_house, guessvec, args =(rguess, wguess, p1, p2, p_tilde, j))
 
 
