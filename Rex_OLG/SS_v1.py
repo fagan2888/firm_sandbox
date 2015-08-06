@@ -4,7 +4,7 @@ import sys
 
 '''
 Author: Rex McArthur
-Last edited August 4, 2015
+Last edited August 5, 2015
 
 This is intended to be a explicitly typed two firm steady state solver.
 Firms will differentiate with different epsilon values, and productivity
@@ -77,12 +77,71 @@ def get_p_tilde(p1, p2):
     p_tilde = ((p1/alpha)**alpha)*((p2/(1-alpha))**(1-alpha))
     return p_tilde
 
+def consump(w, r, n, k0, k, b2, p1, p2, p_tilde, j):
+
+    c = (((1+r)*k0) + w*n*e[j] - k + bq - (p1*cbar1) - (p2*cbar2)/p_tilde)
+    return c
+
 def MUc(c):
     '''
-    
-
     Marginal utility of Consumption
-'''
+    '''
+    mu_c = c**(-sigma)
+    return mu_c
+
+def MUl(n):
+    '''
+    Marginal (dis)utility of labor
+    '''
+    mu_l = -chi_n*((ltilde-n)**(-nu))
+    return mu_l
+
+def MUb(bq):
+    '''
+    Marginal utility of Bequest
+    '''
+    mu_l = chi_b*(bq**(-nu))
+    return mu_l
+
+def k_error(r,c,j):
+    '''
+    Parameters:
+    w = wage
+    r = rate
+    c = consumption array (SxJ)
+    
+    returns the k error for the inner fsolve
+    '''
+    kerror = MUc(c[:-1,0]) - (1+r)*beta*MUc(c[1:,0])
+    return kerror
+
+def l_error(w, L_guess, c, p_tilde, j):
+    '''
+    w = wage
+    r = rental rate
+    L_guess = labor array (SxJ)
+    j = ability type weights
+
+    returns the l error for the inner fsolve
+    '''
+    lerror = (w*MUc(c)*e[j])/p_tilde + MUl(L_guess)
+    return lerror
+
+def bq_error(K_guess, c, p_tilde):
+    '''
+    '''
+    berror = (MUc(c[-1,:]))/p_tilde - MUb(K_guess[-1,:])
+    return berror
+
+def solve_house(guessvec, r, w, p1, p2, p_tilde, j):
+    '''
+    '''
+    k = guessvec[0:S]
+    n = guesses[S:]
+    bq = (1+r)*(k)
+
+
+
 
 p1 = get_p(r,w)
 p2 = get_p(r,w)
