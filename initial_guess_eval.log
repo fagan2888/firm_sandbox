@@ -1,0 +1,177 @@
+--------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/jasondebacker/repos/firm_sandbox/initial_guess_eval.log
+  log type:  text
+ opened on:  23 Jul 2015, 14:44:37
+
+. local datapath "~/repos/firm_sandbox/" ;
+
+. local graphpath "~/repos/firm_sandbox/Graphs/" ;
+
+. set matsize 800 ;
+
+. /* read in data from SS_v2pt1_mktclear.py */
+> insheet using "`datapath'/init_guess_output.csv", comma clear ;
+(11 vars, 10000 obs)
+
+. /* rename variables */
+> replace v11 = "" if v11 == "nan" ;
+(195 real changes made)
+
+. destring v11, replace ;
+v11 has all characters numeric; replaced as double
+(195 missing values generated)
+
+. rename v1 r_guess ;
+
+. rename v2 w_guess ;
+
+. rename v3 rss ;
+
+. rename v4 wss ;
+
+. rename v5 cap_diff ;
+
+. rename v6 labor_diff ;
+
+. rename v7 RC1 ;
+
+. rename v8 RC2 ;
+
+. rename v9 RC1_2 ;
+
+. rename v10 RC2_2 ;
+
+. rename v11 euler_error ;
+
+. gen abs_labor_diff = abs(labor_diff) ;
+
+. gen abs_cap_diff = abs(cap_diff) ;
+
+.  save "`datapath'/init_guess_output.dta", replace ;
+file ~/repos/firm_sandbox//init_guess_output.dta saved
+
+. twoway (connected cap_diff r_guess if w_guess == 1, msize(small) mcolor(blue) lcolor(blue) msymbol(D))
+> (connected labor_diff r_guess, msize(small) mcolor(red) lcolor(red) msymbol(O)),
+>         title("Market clearing diffs by r_guess") 
+>         xtitle("Initial guess of r") 
+>         ytitle("Diff in market clearing condition")
+>         /*xscale(range(1 8)) 
+>         xlabel(1(1)8) 
+>         ylabel(0(10)80,grid) */
+>         legend(label(1 "Capital Market")) 
+>         legend(label(2 "Labor Market"))  
+>         scheme(s1mono) 
+>         saving(graph1, replace);
+(file graph1.gph saved)
+
+.  graph export "`graphpath'/market_clearing_diffs.pdf", replace;
+(file ~/repos/firm_sandbox/Graphs//market_clearing_diffs.pdf written in PDF format)
+
+. twoway (connected cap_diff r_guess if w_guess == 1, msize(small) mcolor(blue) lcolor(blue) msymbol(D)),
+>         title("Market clearing diffs by r_guess") 
+>         xtitle("Initial guess of r") 
+>         ytitle("Diff in market clearing condition")
+>         /*xscale(range(1 8)) 
+>         xlabel(1(1)8) 
+>         ylabel(0(10)80,grid) */
+>         legend(label(1 "Capital Market")) 
+>         scheme(s1mono) 
+>         saving(graph1, replace);
+(file graph1.gph saved)
+
+.  graph export "`graphpath'/cap_market_clearing_diffs.pdf", replace;
+(file ~/repos/firm_sandbox/Graphs//cap_market_clearing_diffs.pdf written in PDF format)
+
+. twoway(connected labor_diff r_guess if w_guess == 1, msize(small) mcolor(red) lcolor(red) msymbol(O)),
+>         title("Market clearing diffs by r_guess") 
+>         xtitle("Initial guess of r") 
+>         ytitle("Diff in market clearing condition")
+>         /*xscale(range(1 8)) 
+>         xlabel(1(1)8) 
+>         ylabel(0(10)80,grid) */
+>         legend(label(1 "Labor Market"))  
+>         scheme(s1mono) 
+>         saving(graph1, replace);
+(file graph1.gph saved)
+
+.  graph export "`graphpath'/labor_market_clearing_diffs.pdf", replace;
+(file ~/repos/firm_sandbox/Graphs//labor_market_clearing_diffs.pdf written in PDF format)
+
+. twoway (connected cap_diff r_guess if r_guess > 0.4 & r_guess < 0.75 & w_guess == 1, msize(small) mcolor(blu
+> e) lcolor(blue) msymbol(D)),
+>         title("Market clearing diffs by r_guess") 
+>         xtitle("Initial guess of r") 
+>         ytitle("Diff in market clearing condition")
+>         /*xscale(range(1 8)) 
+>         xlabel(1(1)8) 
+>         ylabel(0(10)80,grid) */
+>         legend(label(1 "Capital Market")) 
+>         scheme(s1mono) 
+>         saving(graph1, replace);
+(file graph1.gph saved)
+
+.  graph export "`graphpath'/cap_market_clearing_diffs_zoomed.pdf", replace;
+(file ~/repos/firm_sandbox/Graphs//cap_market_clearing_diffs_zoomed.pdf written in PDF format)
+
+. twoway (connected cap_diff r_guess if r_guess > 0.4 & r_guess < 0.75 & cap_diff > -1e-2 & cap_diff < 1e-2 & 
+> w_guess == 1, msize(small) mcolor(blue) lcolor(blue) msymbol(D)),
+>         title("Market clearing diffs by r_guess") 
+>         xtitle("Initial guess of r") 
+>         ytitle("Diff in market clearing condition")
+>         /*xscale(range(1 8)) 
+>         xlabel(1(1)8) 
+>         ylabel(0(10)80,grid) */
+>         legend(label(1 "Capital Market")) 
+>         scheme(s1mono) 
+>         saving(graph1, replace);
+(file graph1.gph saved)
+
+.  graph export "`graphpath'/cap_market_clearing_diffs_zoomed2.pdf", replace;
+(file ~/repos/firm_sandbox/Graphs//cap_market_clearing_diffs_zoomed2.pdf written in PDF format)
+
+. twoway (connected cap_diff r_guess if r_guess > 0.4 & r_guess < 0.75 & w_guess == 1, msize(small) mcolor(blu
+> e) lcolor(blue) msymbol(D)),
+>         title("Market clearing diffs by r_guess") 
+>         xtitle("Initial guess of r") 
+>         ytitle("Diff in market clearing condition")
+>         /*xscale(range(1 8)) 
+>         xlabel(1(1)8) 
+>         ylabel(0(10)80,grid) */
+>         legend(label(1 "Capital Market")) 
+>         scheme(s1mono) 
+>         saving(graph1, replace);
+(file graph1.gph saved)
+
+.  graph export "`graphpath'/cap_market_clearing_diffs_zoomed_wage1.pdf", replace;
+(file ~/repos/firm_sandbox/Graphs//cap_market_clearing_diffs_zoomed_wage1.pdf written in PDF format)
+
+. fucking stop ;
+unrecognized command:  fucking
+r(199);
+
+end of do-file
+
+r(199);
+
+. summ
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+     r_guess |     10000        .496    .2886751       .001       .991
+     w_guess |     10000       7.525    4.330127         .1      14.95
+         rss |     10000    .5059521    .2835151    .000299   .9998102
+         wss |     10000    6.736288    4.899564   .0170573   18.25322
+    cap_diff |     10000   -1.677121    3.426825  -24.76659    16.2992
+-------------+--------------------------------------------------------
+  labor_diff |     10000   -.8775266    .7766023  -4.185652   .4191477
+         RC1 |     10000    2.47e-16    4.16e-16  -1.33e-15   2.66e-15
+         RC2 |     10000    2.47e-16    4.16e-16  -1.33e-15   2.66e-15
+       RC1_2 |     10000   -1.15e-18    9.15e-17  -6.66e-16   5.55e-16
+       RC2_2 |     10000   -1.15e-18    9.15e-17  -6.66e-16   5.55e-16
+-------------+--------------------------------------------------------
+ euler_error |      9805    27114.66     2524532   2.29e-11   2.50e+08
+abs_labor_~f |     10000    .9082907    .7403828          0   4.185652
+abs_cap_diff |     10000     1.95103    3.278604          0   24.76659
+
+. exit

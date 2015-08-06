@@ -66,14 +66,15 @@ TPImindist   = Cut-off distance between iterations for TPI
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
 beta = 0.98 # discount rate
-alpha = 0.9 # preference parameter - share of good 1 in composite consumption
-cbar1 = 0.0 # min cons of good 1
-cbar2 = 0.0 #min cons of good 2
+alpha = 0.29 # preference parameter - share of good 1 in composite consumption
+cbar1 = 0.000 # min cons of good 1
+cbar2 = 0.000 #min cons of good 2
 delta = 0.1 # depreciation rate
 A = 1.0 # Total factor productivity
 gamma = 0.3 # capital's share of output
 xi = np.array([[0.2, 0.8],[0.3, 0.7]]) # fixed coeff input-output matrix
-#xi = np.array([[0.0, 1.0],[0.0, 1.0]]) # fixed coeff input-output matrix
+pi = np.array([[0.5, 0.5],[0.1, 0.9]]) # fixed coeff pce-bridge matrix relating output and cons goods
+#xi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff input-output matrix
 #xi = np.array([[0.0, 1.0],[0.0, 1.0]]) # fixed coeff input-output matrix
 epsilon = 0.6 # elasticity of substitution between capital and labor
 nu = 2.0 # elasticity of labor supply 
@@ -315,7 +316,7 @@ def foc_bq(K_guess, c, p_tilde):
     Returns:
         Value of Euler error.
     '''
-    error = (MUc(c[-1,:]))/p_tilde -  MUb(K_guess[-1, :])
+    error = MUc(c[-1,:])/p_tilde -  MUb(K_guess[-1, :])
     return error
 
 
@@ -361,17 +362,12 @@ def solve_hh(guesses, r, w, p_c1, p_c2, p_tilde, j):
 
 
 def solve_output(guesses, w, r, X_c_1, X_c_2):
-#def solve_output(guesses, w, r, X_c_1, X_c_2, K_s):
-    X1 = guesses[0]
-    X2 = guesses[1]
-    I1 = delta*get_k_demand(w, r,X1) # investment demand - will differ not in SS
-    I2 = delta*get_k_demand(w, r,X2) #investment demand 
-    #K1_d = (X1/(X1+X2))*K_s
-    #K2_d = (X2/(X1+X2))*K_s
-    #I1 = delta*K1_d # investment demand - will differ not in SS
-    #I2 = delta*K2_d #investment demand 
-    error1 = X_c_1  + (I1*xi[0,0]) + (I2*xi[1,0]) - X1
-    error2 = X_c_2  + (I1*xi[0,1]) + (I2*xi[1,1]) - X2  
+    X_1 = guesses[0]
+    X_2 = guesses[1]
+    I1 = delta*get_k_demand(w, r,X_1) # investment demand - will differ not in SS
+    I2 = delta*get_k_demand(w, r,X_2) #investment demand 
+    error1 = X_c_1  + (I1*xi[0,0]) + (I2*xi[1,0]) - X_1
+    error2 = X_c_2  + (I1*xi[0,1]) + (I2*xi[1,1]) - X_2  
 
     #print 'solve_ouput errors: ', error1, error2
     return [error1, error2]
@@ -425,60 +421,36 @@ def Steady_State(guesses):
     C2 = get_C(c2)
 
     # Find total demand for output from each sector from consumption
-    X_c_1 = C1
-    X_c_2 = C2
+    X_c_1 = pi[0,0]*C1 + pi[1,0]*C2
+    X_c_2 = pi[0,1]*C1 + pi[1,1]*C2
 
-     # find aggregate savings and labor supply
-    K_s, K_constr = get_K(k)
-    L_s = get_L(n)
-
-    # Solve for output produced by each sector
     guesses = [(X_c_1+X_c_2)/2, (X_c_1+X_c_2)/2]
     x_sol = opt.fsolve(solve_output, guesses, args=(w, r, X_c_1, X_c_2), xtol=1e-9, col_deriv=1)
-    #x_sol = opt.fsolve(solve_output, guesses, args=(w, r, X_c_1, X_c_2, K_s), xtol=1e-9, col_deriv=1)
 
     X1 = x_sol[0]
     X2 = x_sol[1]
+
+    # find aggregate savings and labor supply
+    K_s, K_constr = get_K(k)
+    L_s = get_L(n)
+
 
     #### Need to solve for labor and capital demand from each industry
     K1_d = get_k_demand(w, r, X1)
     L1_d = get_l_demand(w, r, K1_d)
     K2_d = get_k_demand(w, r, X2)
     L2_d = get_l_demand(w, r, K2_d)
-    #K1_d = (X1/(X1+X2))*K_s
-    #L1_d = (X1/(X1+X2))*L_s
-    #K2_d = (X2/(X1+X2))*K_s
-    #L2_d = (X2/(X1+X2))*L_s
-    #K2_d = K_s -K1_d
-    #L2_d = L_s -L1_d
-    #print 'capital demands: ', K1_d, get_k_demand(w, r, X1)
+
+    #print 'r diffs', r-get_r(X1,K1_d), r-get_r(X2,K2_d)
 
     # Check labor and capital market clearing conditions
-    #K_d = K1_d + K2_d 
-    #L_d = L1_d + L2_d 
+    K_d = K1_d + K2_d 
+    L_d = L1_d + L2_d 
     
-    #error1 = K_s - K_d
-    #error2 = L_s - L_d
-
-    r_new = get_r(X1, K1_d)
-    w_new = get_w(X1, L1_d)
-    #print 'r1, r2, r', get_r(X1, K1_d), get_r(X2, K2_d), r
-    print 'k1 three ways: ', K1_d, (X1/(X1+X2))*(K1_d+K2_d), (X1/(X1+X2))*(K_s) 
-    #print 'r diffs', get_r(X1, K1_d)-get_r(X2, K2_d), get_r(X1, K1_d)-r
-
-    print 'market clearing: ', K1_d+K2_d-K_s, L1_d+L2_d-L_s 
-    print 'resource constraint: ', X1-C1-(delta*xi[0,0]*K1_d)-(delta*xi[1,0]*K2_d), X2-C2-(delta*xi[0,1]*K1_d)-(delta*xi[1,1]*K2_d) 
-
-    error1 = r_new - r
-    error2 = w_new - w
+    error1 = K_s - K_d
+    error2 = L_s - L_d
 
     # Check and punish violations
-    # if r_new <= 0:
-    #     error1 += 1e9
-    # if r_new > 1:
-    #     error1 += 1e9
-    # if w_new <= 0:
-    #     error2 += 1e9
     if r <= 0:
         error1 += 1e9
     if r > 1:
@@ -486,20 +458,13 @@ def Steady_State(guesses):
     if w <= 0:
         error2 += 1e9
 
-    print 'errors: ', error1, error2
-    print 'r: ', r_new, r
-
     return [error1, error2]
     
 
-# Make initial guesses for factor prices
-#r_guess_init = 0.685814383743 
-#w_guess_init = 1.10140534876
-r_guess_init = 0.44 
-w_guess_init = 1.0
-guesses = [r_guess_init, w_guess_init]
-
 # Solve SS
+r_guess_init = 0.77
+w_guess_init = 1.03 
+guesses = [r_guess_init, w_guess_init]
 solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
 #solutions = Steady_State(guesses)
 rss = solutions[0]
@@ -550,8 +515,8 @@ C1ss = get_C(c1ss)
 C2ss = get_C(c2ss)
 
 # Find total demand for output from each sector from consumption
-X_c_1_ss = C1ss
-X_c_2_ss = C2ss
+X_c_1_ss = pi[0,0]*C1ss + pi[1,0]*C2ss
+X_c_2_ss = pi[0,1]*C1ss + pi[1,1]*C2ss
 
 print 'X_c_2_ss', X_c_2_ss
 
@@ -601,8 +566,8 @@ I2ss = delta*get_k_demand(wss,rss,X2_ss)
 print 'RESOURCE CONSTRAINT DIFFERENCE:'
 print 'RC1: ', X1_ss - Y1ss
 print 'RC2: ', X2_ss - Y2ss
-print 'RC1: ', X1_ss - C1ss- delta*K1_d_ss*xi[0,0] - delta*K2_d_ss*xi[1,0]
-print 'RC2: ', X2_ss - C2ss- delta*K1_d_ss*xi[0,1] - delta*K2_d_ss*xi[1,1]
+print 'RC1: ', X1_ss - X_c_1_ss- delta*K1_d_ss*xi[0,0] - delta*K2_d_ss*xi[1,0]
+print 'RC2: ', X2_ss - X_c_2_ss - delta*K1_d_ss*xi[0,1] - delta*K2_d_ss*xi[1,1]
 
 
 print("Euler errors")

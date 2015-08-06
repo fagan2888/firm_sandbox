@@ -61,10 +61,7 @@ TPImaxiter   = Maximum number of iterations that TPI will undergo
 TPImindist   = Cut-off distance between iterations for TPI
 ------------------------------------------------------------------------
 '''
-#computational parameters
-maxiter = 1000
-mindist_SS = 1e-9
-mu = 0.5
+
 
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
@@ -75,7 +72,7 @@ nu = 2.0 # elasticity of labor supply
 chi_n = 0.5 #utility weight, disutility of labor
 chi_b = 0.2 #utility weight, warm glow bequest motive
 ltilde = 1.0 # maximum hours
-e = [0.5, 1.0, 1.2, 1.5] # effective labor units for the J types
+e = [0.5, 1.0, 1.2, 1.7] # effective labor units for the J types
 #e = [1.0, 1.0, 1.0, 1.0] # effective labor units for the J types
 S = 5 # periods in life of hh
 J = 4 # number of lifetime income groups
@@ -152,7 +149,6 @@ def get_K(k):
     return K, K_constr
 
 
-
 def MUc(c):
     '''
     Parameters: Consumption
@@ -194,13 +190,12 @@ def get_BQ(r, k, j):
     
     
     
-def get_dist_bq(BQ,j):
+def get_dist_bq(BQ, j):
     '''
     Parameters: Aggregate bequests by ability type
 
     Returns:    Bequests by age and ability
     '''
-    
     output = np.tile(BQ/(weights[:,j].sum(0)),(S,1))
 
     return output
@@ -212,6 +207,7 @@ def get_cons(w, r, n, k0, k, bq, j):
     Returns:    Bequests by age and ability
     '''
     output = ((1+r)*k0) + w*n*e[j] - k + bq
+
     return output
     
 
@@ -227,6 +223,7 @@ def foc_k(r, c, j):
     Returns:
         Value of foc error ((S-1)xJ array)
     '''
+
     error = MUc(c[:-1,0]) - (1+r)*beta*surv_mat[:-1,j]*MUc(c[1:,0]) 
     return error
 
@@ -263,24 +260,13 @@ def foc_bq(K_guess, c):
     error = MUc(c[-1,:]) -  MUb(K_guess[-1, :])
     return error
 
-
-def perc_dif_func(simul, data):
-    '''
-    Used to calculate the absolute percent difference between the data
-    moments and model moments
-    '''
-    frac = (simul - data)/data
-    output = np.abs(frac)
-    return output
-
 def solve_hh(guesses, r, w, j):
     '''
     Parameters: SS interest rate (r), SS wage rate (w)
-    Returns:    Savings (SxJ)
-                Labor supply (SxJ)    
+    Returns:    Savings (Sx1)
+                Labor supply (Sx1)    
 
     '''
-    
     k = guesses[0: S].reshape((S, 1))
     n = guesses[S:].reshape((S, 1))        
     BQ = get_BQ(r, k, j)
@@ -315,7 +301,8 @@ def solve_hh(guesses, r, w, j):
     return list(error1.flatten()) + list(error2.flatten()) + list(error3.flatten()) 
 
 
-def Steady_State(guesses, mu):
+
+def Steady_State(guesses):
     '''
     Parameters: Steady state distribution of capital guess as array
                 size SxJ and labor supply array of SxJ rss
@@ -324,68 +311,68 @@ def Steady_State(guesses, mu):
     
     r = guesses[0]
     w = guesses[1]
-    
-    
-    dist = 10
-    iteration = 0
-    dist_vec = np.zeros(maxiter)
-    
+
     # Make initial guesses for capital and labor
     K_guess_init = np.ones((S, J)) * 0.05
     L_guess_init = np.ones((S, J)) * 0.3
-    k = np.zeros((S,J)) # initialize k matrix
-    n = np.zeros((S,J)) # initialize n matrix
+    #guesses = list(K_guess_init.flatten()) + list(L_guess_init.flatten())
     
-    while (dist > mindist_SS) and (iteration < maxiter):
-        
+    k = np.zeros((S, J))
+    n = np.zeros((S, J))
+    c = np.zeros((S, J))
+    for j in xrange(J):
+        if j == 0:
+            guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
+        else:
+            guesses = np.append(k[:,(j-1)], n[:,(j-1)])
+        solutions = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1)
+        #out = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1, full_output=1)
+        #print'solution found flag', out[2], out[3]
+        #solutions = out[0]
+        k[:,j] = solutions[:S].reshape(S)
+        n[:,j] = solutions[S:].reshape(S)
+        BQ = get_BQ(r, k[:,j].reshape(S,1), j)
+        bq = get_dist_bq(BQ, j).reshape(S,1)
+        k0 = np.zeros((S,1))
+        k0[1:,0] = k[:-1,j] # capital start period with
+        c[:,j] = get_cons(w, r, n[:,j].reshape(S,1), k0[:,0].reshape(S,1), k[:,j].reshape(S,1), bq, j).reshape(S)
 
-        
-        for j in xrange(J):
-            # Solve the euler equations
-            if j == 0:
-                guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
-            else:
-                guesses = np.append(k[:,(j-1)], n[:,(j-1)])
-            solutions = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1)
-            #out = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1, full_output=1)
-            #print'solution found flag', out[2], out[3]
-            #solutions = out[0]
-            k[:,j] = solutions[:S].reshape(S)
-            n[:,j] = solutions[S:].reshape(S)
+    K_s, K_constr = get_K(k)
+    L_s = get_L(n)
+    C = np.sum(weights*c)
+    Y =  C/(1-((alpha*delta)/(r+delta))) 
+    #Y = get_Y(K_s,L_s)
+    #r_new = get_r(Y,K)
+    #w_new = get_w(Y,L)
+    
+    K_d = Y*(((1-alpha)/alpha)**(alpha-1))*(((r+delta)/w)**(alpha-1))
+    L_d = K_d*((1-alpha)/alpha)*((r+delta)/w)
+    #K_d = (alpha*Y)/(r+delta)
+    #L_d = ((1-alpha)*Y)/w
 
-        
-        K, K_constr = get_K(k)
-        L = get_L(n)
-        Y = get_Y(K, L)    
-        r_new = get_r(Y,K)
-        w_new = get_w(Y,L)
-        
-        
-        r = mu*r_new + (1-mu)*r # so if r low, get low save, so low capital stock, so high mpk, so r_new bigger
-        w = mu*w_new + (1-mu)*w
+    error1 = K_s - K_d
+    error2 = L_s - L_d
 
-        dist = np.array([perc_dif_func(r_new, r)]+[perc_dif_func(w_new, w)]).max()
-        
-        dist_vec[iteration] = dist
-        if iteration > 10:
-            if dist_vec[iteration] - dist_vec[iteration-1] > 0:
-                mu /= 2.0
-                print 'New value of mu:', mu
-        iteration += 1
-        print "Iteration: %02d" % iteration, " Distance: ", dist
 
- 
-    return [r, w]
+    # Check and punish violations
+    if r <= 0:
+        error1 += 1e9
+    if r > 1:
+        error1 += 1e9
+    if w <= 0:
+        error2 += 1e9
+
+    return [error1, error2]
     
 
 # Make initial guesses for factor prices
-r_guess_init = 0.4
-w_guess_init = 1.0
+r_guess_init = 0.44
+w_guess_init = 0.53
 guesses = [r_guess_init, w_guess_init]
 
 # Solve SS
-solutions = Steady_State(guesses, mu)
-
+solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
+#solutions = Steady_State(guesses)
 rss = solutions[0]
 wss = solutions[1]
 print 'rss, wss: ', rss, wss
@@ -429,6 +416,7 @@ Yss = get_Y(Kss, Lss)
 Css = np.sum(weights*Cssmat)
 
 print 'RESOURCE CONSTRAINT DIFFERENCE:', Yss - Css- delta*Kss
+print(Css/(1-((alpha*delta)/(rss+delta)))- Css - delta*Kss)
 
 # check Euler errors
 print("Euler errors")

@@ -314,6 +314,7 @@ Kssmat0[1:,:] = Kssmat[:-1,:] # capital start period with
 Cssmat = get_cons(wss, rss, Lssmat, Kssmat0, Kssmat, bqss)
 Css = np.sum(weights*Cssmat)
 
+print 'SS r and w: ', rss, wss
 print 'RESOURCE CONSTRAINT DIFFERENCE:', Yss - Css- delta*Kss
 
 # check Euler errors

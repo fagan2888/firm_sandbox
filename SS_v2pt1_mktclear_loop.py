@@ -66,14 +66,14 @@ TPImindist   = Cut-off distance between iterations for TPI
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
 beta = 0.98 # discount rate
-alpha = 0.9 # preference parameter - share of good 1 in composite consumption
-cbar1 = 0.0 # min cons of good 1
-cbar2 = 0.0 #min cons of good 2
+alpha = 0.5 # preference parameter - share of good 1 in composite consumption
+cbar1 = 0.000 # min cons of good 1
+cbar2 = 0.000 #min cons of good 2
 delta = 0.1 # depreciation rate
 A = 1.0 # Total factor productivity
 gamma = 0.3 # capital's share of output
-xi = np.array([[0.2, 0.8],[0.3, 0.7]]) # fixed coeff input-output matrix
-#xi = np.array([[0.0, 1.0],[0.0, 1.0]]) # fixed coeff input-output matrix
+#xi = np.array([[0.2, 0.8],[0.3, 0.7]]) # fixed coeff input-output matrix
+xi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff input-output matrix
 #xi = np.array([[0.0, 1.0],[0.0, 1.0]]) # fixed coeff input-output matrix
 epsilon = 0.6 # elasticity of substitution between capital and labor
 nu = 2.0 # elasticity of labor supply 
@@ -176,7 +176,7 @@ def get_p_c(r, w):
 
     Returns: p_c
     '''
-    p_c = (((1-gamma)*((w/A)**(1-epsilon)))+(gamma*(((r+delta)/A)**(1-epsilon))))**(1/(1-epsilon))
+    p_c = (A**(epsilon-1))*(((1-gamma)*(w**(1-epsilon))) + (gamma*((r+delta)**(1-epsilon))))
     return p_c
     
 def get_p_tilde(p_c1, p_c2):
@@ -286,7 +286,7 @@ def foc_k(r, c, j):
     return error
 
 
-def foc_l(w, L_guess, c, p_tilde, j):
+def foc_l(w, L_guess, c, j):
     '''
     Parameters:
         w        = wage rate (scalar)
@@ -299,10 +299,10 @@ def foc_l(w, L_guess, c, p_tilde, j):
         Value of foc error (SxJ array)
     '''
     
-    error = (w*MUc(c)*e[j])/p_tilde + MUl(L_guess) 
+    error = w*MUc(c)*e[j] + MUl(L_guess) 
     return error
 
-def foc_bq(K_guess, c, p_tilde):
+def foc_bq(K_guess, c):
     '''
     Parameters:
         w        = wage rate (scalar)
@@ -315,7 +315,7 @@ def foc_bq(K_guess, c, p_tilde):
     Returns:
         Value of Euler error.
     '''
-    error = (MUc(c[-1,:]))/p_tilde -  MUb(K_guess[-1, :])
+    error = MUc(c[-1,:]) -  MUb(K_guess[-1, :])
     return error
 
 
@@ -334,8 +334,8 @@ def solve_hh(guesses, r, w, p_c1, p_c2, p_tilde, j):
     k0[1:,0] = k[:-1,0] # capital start period with
     c = get_cons(w, r, n, k0, k, bq, p_c1, p_c2, p_tilde, j)
     error1 = foc_k(r, c, j) 
-    error2 = foc_l(w, n, c, p_tilde, j) 
-    error3 = foc_bq(k, c, p_tilde) 
+    error2 = foc_l(w, n, c, j) 
+    error3 = foc_bq(k, c) 
 
     # Check and punish constraing violations
     mask1 = n <= 0
@@ -361,17 +361,12 @@ def solve_hh(guesses, r, w, p_c1, p_c2, p_tilde, j):
 
 
 def solve_output(guesses, w, r, X_c_1, X_c_2):
-#def solve_output(guesses, w, r, X_c_1, X_c_2, K_s):
-    X1 = guesses[0]
-    X2 = guesses[1]
-    I1 = delta*get_k_demand(w, r,X1) # investment demand - will differ not in SS
-    I2 = delta*get_k_demand(w, r,X2) #investment demand 
-    #K1_d = (X1/(X1+X2))*K_s
-    #K2_d = (X2/(X1+X2))*K_s
-    #I1 = delta*K1_d # investment demand - will differ not in SS
-    #I2 = delta*K2_d #investment demand 
-    error1 = X_c_1  + (I1*xi[0,0]) + (I2*xi[1,0]) - X1
-    error2 = X_c_2  + (I1*xi[0,1]) + (I2*xi[1,1]) - X2  
+    X_1 = guesses[0]
+    X_2 = guesses[1]
+    I1 = delta*get_k_demand(w, r,X_1) # investment demand - will differ not in SS
+    I2 = delta*get_k_demand(w, r,X_2) #investment demand 
+    error1 = X_c_1  + (I1*xi[0,0]) + (I2*xi[1,0]) - X_1
+    error2 = X_c_2  + (I1*xi[0,1]) + (I2*xi[1,1]) - X_2  
 
     #print 'solve_ouput errors: ', error1, error2
     return [error1, error2]
@@ -428,57 +423,33 @@ def Steady_State(guesses):
     X_c_1 = C1
     X_c_2 = C2
 
-     # find aggregate savings and labor supply
-    K_s, K_constr = get_K(k)
-    L_s = get_L(n)
-
-    # Solve for output produced by each sector
     guesses = [(X_c_1+X_c_2)/2, (X_c_1+X_c_2)/2]
     x_sol = opt.fsolve(solve_output, guesses, args=(w, r, X_c_1, X_c_2), xtol=1e-9, col_deriv=1)
-    #x_sol = opt.fsolve(solve_output, guesses, args=(w, r, X_c_1, X_c_2, K_s), xtol=1e-9, col_deriv=1)
 
     X1 = x_sol[0]
     X2 = x_sol[1]
+
+    # find aggregate savings and labor supply
+    K_s, K_constr = get_K(k)
+    L_s = get_L(n)
+
 
     #### Need to solve for labor and capital demand from each industry
     K1_d = get_k_demand(w, r, X1)
     L1_d = get_l_demand(w, r, K1_d)
     K2_d = get_k_demand(w, r, X2)
     L2_d = get_l_demand(w, r, K2_d)
-    #K1_d = (X1/(X1+X2))*K_s
-    #L1_d = (X1/(X1+X2))*L_s
-    #K2_d = (X2/(X1+X2))*K_s
-    #L2_d = (X2/(X1+X2))*L_s
-    #K2_d = K_s -K1_d
-    #L2_d = L_s -L1_d
-    #print 'capital demands: ', K1_d, get_k_demand(w, r, X1)
+
+    #print 'r diffs', r-get_r(X1,K1_d), r-get_r(X2,K2_d)
 
     # Check labor and capital market clearing conditions
-    #K_d = K1_d + K2_d 
-    #L_d = L1_d + L2_d 
+    K_d = K1_d + K2_d 
+    L_d = L1_d + L2_d 
     
-    #error1 = K_s - K_d
-    #error2 = L_s - L_d
-
-    r_new = get_r(X1, K1_d)
-    w_new = get_w(X1, L1_d)
-    #print 'r1, r2, r', get_r(X1, K1_d), get_r(X2, K2_d), r
-    print 'k1 three ways: ', K1_d, (X1/(X1+X2))*(K1_d+K2_d), (X1/(X1+X2))*(K_s) 
-    #print 'r diffs', get_r(X1, K1_d)-get_r(X2, K2_d), get_r(X1, K1_d)-r
-
-    print 'market clearing: ', K1_d+K2_d-K_s, L1_d+L2_d-L_s 
-    print 'resource constraint: ', X1-C1-(delta*xi[0,0]*K1_d)-(delta*xi[1,0]*K2_d), X2-C2-(delta*xi[0,1]*K1_d)-(delta*xi[1,1]*K2_d) 
-
-    error1 = r_new - r
-    error2 = w_new - w
+    error1 = K_s - K_d
+    error2 = L_s - L_d
 
     # Check and punish violations
-    # if r_new <= 0:
-    #     error1 += 1e9
-    # if r_new > 1:
-    #     error1 += 1e9
-    # if w_new <= 0:
-    #     error2 += 1e9
     if r <= 0:
         error1 += 1e9
     if r > 1:
@@ -486,130 +457,228 @@ def Steady_State(guesses):
     if w <= 0:
         error2 += 1e9
 
-    print 'errors: ', error1, error2
-    print 'r: ', r_new, r
-
     return [error1, error2]
     
 
+init_guess_output = np.zeros((100*100,11))
+init_guess_iter = 0 
 # Make initial guesses for factor prices
-#r_guess_init = 0.685814383743 
-#w_guess_init = 1.10140534876
-r_guess_init = 0.44 
-w_guess_init = 1.0
-guesses = [r_guess_init, w_guess_init]
+for ii in xrange(100):
+    r_guess_init = 0.01*ii + 0.001
+    for jj in xrange(100):
+        w_guess_init = 0.05*jj + 0.1
+        
+        guesses = [r_guess_init, w_guess_init]
 
-# Solve SS
-solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
-#solutions = Steady_State(guesses)
-rss = solutions[0]
-wss = solutions[1]
-print 'ss r, w: ', rss, wss
+        solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
+        rss = solutions[0]
+        wss = solutions[1]
 
-p_c1_ss = get_p_c(rss,wss)
-p_c2_ss = get_p_c(rss,wss)
-p_tilde_ss = get_p_tilde(p_c1_ss,p_c2_ss)
-print 'SS cons prices: ', p_c1_ss, p_c2_ss, p_tilde_ss
+        p_c1_ss = get_p_c(rss,wss)
+        p_c2_ss = get_p_c(rss,wss)
+        p_tilde_ss = get_p_tilde(p_c1_ss,p_c2_ss)
 
-K_guess_init = np.ones((S, J)) * 0.05
-L_guess_init = np.ones((S, J)) * 0.3
-kss = np.zeros((S, J))
-nss = np.zeros((S, J))
-css = np.zeros((S, J))
-error1 = np.zeros((S-1,J)) # initialize foc k errors
-error2 = np.zeros((S,J)) # initialize foc k errors
-error3 = np.zeros((1,J)) # initialize foc k errors
+        K_guess_init = np.ones((S, J)) * 0.05
+        L_guess_init = np.ones((S, J)) * 0.3
+        kss = np.zeros((S, J))
+        nss = np.zeros((S, J))
+        css = np.zeros((S, J))
+        error1 = np.zeros((S-1,J)) # initialize foc k errors
+        error2 = np.zeros((S,J)) # initialize foc k errors
+        error3 = np.zeros((1,J)) # initialize foc k errors
 
-for j in xrange(J):
-    if j == 0:
-        guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
-    else:
-        guesses = np.append(kss[:,(j-1)], nss[:,(j-1)])
-    #solutions = opt.fsolve(solve_hh, guesses, args=(rss, wss, j), xtol=1e-9, col_deriv=1)
-    out = opt.fsolve(solve_hh, guesses, args=(rss, wss, p_c1_ss, p_c2_ss, p_tilde_ss, j), xtol=1e-9, col_deriv=1, full_output=1)
-   # print'solution found flag', out[2], out[3]
-    #print 'fsovle output: ', out[1]
-    solutions = out[0]
-    kss[:,j] = solutions[:S].reshape(S)
-    nss[:,j] = solutions[S:].reshape(S)
-    BQss = get_BQ(rss, kss[:,j].reshape(S,1), j)
-    bqss = get_dist_bq(BQss, j).reshape(S,1)
-    k0ss = np.zeros((S,1))
-    k0ss[1:,0] = kss[:-1,j] # capital start period with
-    css[:,j] = get_cons(wss, rss, nss[:,j].reshape(S,1), k0ss[:,0].reshape(S,1), kss[:,j].reshape(S,1), bqss, p_c1_ss, p_c2_ss, p_tilde_ss, j).reshape(S)
-    # check Euler errors
-    error1[:,j] = foc_k(rss, css[:,j].reshape(S,1), j).reshape(S-1) 
-    error2[:,j] = foc_l(wss, nss[:,j].reshape(S,1), css[:,j].reshape(S,1), p_tilde_ss, j).reshape(S) 
-    error3[:,j] = foc_bq(kss[:,j].reshape(S,1), css[:,j].reshape(S,1), p_tilde_ss)
+        for j in xrange(J):
+            if j == 0:
+                guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
+            else:
+                guesses = np.append(kss[:,(j-1)], nss[:,(j-1)])
+            #solutions = opt.fsolve(solve_hh, guesses, args=(rss, wss, j), xtol=1e-9, col_deriv=1)
+            out = opt.fsolve(solve_hh, guesses, args=(rss, wss, p_c1_ss, p_c2_ss, p_tilde_ss, j), xtol=1e-9, col_deriv=1, full_output=1)
+           # print'solution found flag', out[2], out[3]
+            #print 'fsovle output: ', out[1]
+            solutions = out[0]
+            kss[:,j] = solutions[:S].reshape(S)
+            nss[:,j] = solutions[S:].reshape(S)
+            BQss = get_BQ(rss, kss[:,j].reshape(S,1), j)
+            bqss = get_dist_bq(BQss, j).reshape(S,1)
+            k0ss = np.zeros((S,1))
+            k0ss[1:,0] = kss[:-1,j] # capital start period with
+            css[:,j] = get_cons(wss, rss, nss[:,j].reshape(S,1), k0ss[:,0].reshape(S,1), kss[:,j].reshape(S,1), bqss, p_c1_ss, p_c2_ss, p_tilde_ss, j).reshape(S)
+            # check Euler errors
+            error1[:,j] = foc_k(rss, css[:,j].reshape(S,1), j).reshape(S-1) 
+            error2[:,j] = foc_l(wss, nss[:,j].reshape(S,1), css[:,j].reshape(S,1), j).reshape(S) 
+            error3[:,j] = foc_bq(kss[:,j].reshape(S,1), css[:,j].reshape(S,1))
 
-c1ss = (p_tilde_ss*css*alpha)/p_c1_ss + cbar1
-c2ss = (p_tilde_ss*css*(1-alpha))/p_c2_ss + cbar2
+        c1ss = (p_tilde_ss*css*alpha)/p_c1_ss + cbar1
+        c2ss = (p_tilde_ss*css*(1-alpha))/p_c2_ss + cbar2
 
-# Find total consumption of each good
-C1ss = get_C(c1ss)
-C2ss = get_C(c2ss)
+        # Find total consumption of each good
+        C1ss = get_C(c1ss)
+        C2ss = get_C(c2ss)
 
-# Find total demand for output from each sector from consumption
-X_c_1_ss = C1ss
-X_c_2_ss = C2ss
+        # Find total demand for output from each sector from consumption
+        X_c_1_ss = C1ss
+        X_c_2_ss = C2ss
 
-print 'X_c_2_ss', X_c_2_ss
+        guesses = [(X_c_1_ss+X_c_2_ss)/2, (X_c_1_ss+X_c_2_ss)/2]
+        x_sol_ss = opt.fsolve(solve_output, guesses, args=(wss, rss, X_c_1_ss, X_c_2_ss), xtol=1e-9, col_deriv=1)
 
-guesses = [(X_c_1_ss+X_c_2_ss)/2, (X_c_1_ss+X_c_2_ss)/2]
-x_sol_ss = opt.fsolve(solve_output, guesses, args=(wss, rss, X_c_1_ss, X_c_2_ss), xtol=1e-9, col_deriv=1)
+        X1_ss = x_sol_ss[0]
+        X2_ss = x_sol_ss[1]
 
-X1_ss = x_sol_ss[0]
-X2_ss = x_sol_ss[1]
+        # find aggregate savings and labor supply
+        K_s_ss, K_constr = get_K(kss)
+        L_s_ss = get_L(nss)
 
-# find aggregate savings and labor supply
-K_s_ss, K_constr = get_K(kss)
-L_s_ss = get_L(nss)
+        #### Need to solve for labor and capital demand from each industry
+        K1_d_ss = get_k_demand(wss, rss, X1_ss)
+        L1_d_ss = get_l_demand(wss, rss, K1_d_ss)
+        K2_d_ss = get_k_demand(wss, rss, X2_ss)
+        L2_d_ss = get_l_demand(wss, rss, K2_d_ss)
 
-#### Need to solve for labor and capital demand from each industry
-K1_d_ss = get_k_demand(wss, rss, X1_ss)
-L1_d_ss = get_l_demand(wss, rss, K1_d_ss)
-K2_d_ss = get_k_demand(wss, rss, X2_ss)
-L2_d_ss = get_l_demand(wss, rss, K2_d_ss)
+        # Check labor and capital market clearing conditions
+        K_d_ss = K1_d_ss + K2_d_ss 
+        L_d_ss = L1_d_ss + L2_d_ss 
 
-# Check labor and capital market clearing conditions
-K_d_ss = K1_d_ss + K2_d_ss 
-L_d_ss = L1_d_ss + L2_d_ss 
+        cap_diff = K_s_ss - K_d_ss
+        labor_diff = L_s_ss - L_d_ss
 
-cap_diff = K_s_ss - K_d_ss
-labor_diff = L_s_ss - L_d_ss
-print 'Market clearing diffs: ', cap_diff, labor_diff
+        Y1ss = get_X(K1_d_ss,L1_d_ss)
+        Y2ss = get_X(K2_d_ss,L2_d_ss)
 
-Y1ss = get_X(K1_d_ss,L1_d_ss)
-Y2ss = get_X(K2_d_ss,L2_d_ss)
+        # 'RESOURCE CONSTRAINT DIFFERENCE:'
+        RC1 = X1_ss - Y1ss
+        RC2 = X2_ss - Y2ss
+        RC1_2 = X1_ss - C1ss- delta*K1_d_ss*xi[0,0] - delta*K2_d_ss*xi[1,0]
+        RC2_2 = X2_ss - C2ss- delta*K1_d_ss*xi[0,1] - delta*K2_d_ss*xi[1,1]
 
-#print 'cons: ', C1ss, C2ss
-#print 'Kss: ', K1_d_ss, K2_d_ss
-#print 'Lss: ', L1_d_ss, L2_d_ss
-#print 'K/L: ', K1_d_ss/L1_d_ss, K2_d_ss/L2_d_ss
-#print 'Xss: ', X1_ss, X2_ss, Y1ss, Y2ss
+        max_error1 = (np.absolute(error1)).max()
+        max_error2 = (np.absolute(error2)).max()
+        max_error3 = (np.absolute(error3)).max()
+        max_euler_error = max(max_error1,max_error2,max_error3)
 
+        init_guess_output[init_guess_iter,:] = np.array([r_guess_init, w_guess_init, rss, wss, cap_diff, labor_diff, RC1, RC2, RC1_2, RC2_2, max_euler_error]).reshape(11) 
 
-I1ss = delta*get_k_demand(wss,rss,X1_ss) # investment demand - will differ not in SS
-I2ss = delta*get_k_demand(wss,rss,X2_ss)
+        init_guess_iter += 1
 
-#X1ss_check = X_c_1_ss  + (I1ss*xi[0,0]) + (I2ss*xi[1,0])
-#X2ss_check = X_c_2_ss  + (I1ss*xi[0,1]) + (I2ss*xi[1,1])
-#print 'X1 check: ', X1_ss, X1ss_check
-#print 'X2 check: ', X2_ss, X2ss_check
+np.savetxt('init_guess_output.csv', init_guess_output, delimiter=',')
 
 
-print 'RESOURCE CONSTRAINT DIFFERENCE:'
-print 'RC1: ', X1_ss - Y1ss
-print 'RC2: ', X2_ss - Y2ss
-print 'RC1: ', X1_ss - C1ss- delta*K1_d_ss*xi[0,0] - delta*K2_d_ss*xi[1,0]
-print 'RC2: ', X2_ss - C2ss- delta*K1_d_ss*xi[0,1] - delta*K2_d_ss*xi[1,1]
 
 
-print("Euler errors")
-print(error1)
-print(error2)
-print(error3)
 
-print 'kssmat: ', kss
+
+# # Solve SS
+# solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
+# #solutions = Steady_State(guesses)
+# rss = solutions[0]
+# wss = solutions[1]
+# print 'ss r, w: ', rss, wss
+
+# p_c1_ss = get_p_c(rss,wss)
+# p_c2_ss = get_p_c(rss,wss)
+# p_tilde_ss = get_p_tilde(p_c1_ss,p_c2_ss)
+# print 'SS cons prices: ', p_c1_ss, p_c2_ss, p_tilde_ss
+
+# K_guess_init = np.ones((S, J)) * 0.05
+# L_guess_init = np.ones((S, J)) * 0.3
+# kss = np.zeros((S, J))
+# nss = np.zeros((S, J))
+# css = np.zeros((S, J))
+# error1 = np.zeros((S-1,J)) # initialize foc k errors
+# error2 = np.zeros((S,J)) # initialize foc k errors
+# error3 = np.zeros((1,J)) # initialize foc k errors
+
+# for j in xrange(J):
+#     if j == 0:
+#         guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
+#     else:
+#         guesses = np.append(kss[:,(j-1)], nss[:,(j-1)])
+#     #solutions = opt.fsolve(solve_hh, guesses, args=(rss, wss, j), xtol=1e-9, col_deriv=1)
+#     out = opt.fsolve(solve_hh, guesses, args=(rss, wss, p_c1_ss, p_c2_ss, p_tilde_ss, j), xtol=1e-9, col_deriv=1, full_output=1)
+#    # print'solution found flag', out[2], out[3]
+#     #print 'fsovle output: ', out[1]
+#     solutions = out[0]
+#     kss[:,j] = solutions[:S].reshape(S)
+#     nss[:,j] = solutions[S:].reshape(S)
+#     BQss = get_BQ(rss, kss[:,j].reshape(S,1), j)
+#     bqss = get_dist_bq(BQss, j).reshape(S,1)
+#     k0ss = np.zeros((S,1))
+#     k0ss[1:,0] = kss[:-1,j] # capital start period with
+#     css[:,j] = get_cons(wss, rss, nss[:,j].reshape(S,1), k0ss[:,0].reshape(S,1), kss[:,j].reshape(S,1), bqss, p_c1_ss, p_c2_ss, p_tilde_ss, j).reshape(S)
+#     # check Euler errors
+#     error1[:,j] = foc_k(rss, css[:,j].reshape(S,1), j).reshape(S-1) 
+#     error2[:,j] = foc_l(wss, nss[:,j].reshape(S,1), css[:,j].reshape(S,1), j).reshape(S) 
+#     error3[:,j] = foc_bq(kss[:,j].reshape(S,1), css[:,j].reshape(S,1))
+
+# c1ss = (p_tilde_ss*css*alpha)/p_c1_ss + cbar1
+# c2ss = (p_tilde_ss*css*(1-alpha))/p_c2_ss + cbar2
+
+# # Find total consumption of each good
+# C1ss = get_C(c1ss)
+# C2ss = get_C(c2ss)
+
+# # Find total demand for output from each sector from consumption
+# X_c_1_ss = C1ss
+# X_c_2_ss = C2ss
+
+# print 'X_c_2_ss', X_c_2_ss
+
+# guesses = [(X_c_1_ss+X_c_2_ss)/2, (X_c_1_ss+X_c_2_ss)/2]
+# x_sol_ss = opt.fsolve(solve_output, guesses, args=(wss, rss, X_c_1_ss, X_c_2_ss), xtol=1e-9, col_deriv=1)
+
+# X1_ss = x_sol_ss[0]
+# X2_ss = x_sol_ss[1]
+
+# # find aggregate savings and labor supply
+# K_s_ss, K_constr = get_K(kss)
+# L_s_ss = get_L(nss)
+
+# #### Need to solve for labor and capital demand from each industry
+# K1_d_ss = get_k_demand(wss, rss, X1_ss)
+# L1_d_ss = get_l_demand(wss, rss, K1_d_ss)
+# K2_d_ss = get_k_demand(wss, rss, X2_ss)
+# L2_d_ss = get_l_demand(wss, rss, K2_d_ss)
+
+# # Check labor and capital market clearing conditions
+# K_d_ss = K1_d_ss + K2_d_ss 
+# L_d_ss = L1_d_ss + L2_d_ss 
+
+# cap_diff = K_s_ss - K_d_ss
+# labor_diff = L_s_ss - L_d_ss
+# print 'Market clearing diffs: ', cap_diff, labor_diff
+
+# Y1ss = get_X(K1_d_ss,L1_d_ss)
+# Y2ss = get_X(K2_d_ss,L2_d_ss)
+
+# #print 'cons: ', C1ss, C2ss
+# #print 'Kss: ', K1_d_ss, K2_d_ss
+# #print 'Lss: ', L1_d_ss, L2_d_ss
+# #print 'K/L: ', K1_d_ss/L1_d_ss, K2_d_ss/L2_d_ss
+# #print 'Xss: ', X1_ss, X2_ss, Y1ss, Y2ss
+
+
+# I1ss = delta*get_k_demand(wss,rss,X1_ss) # investment demand - will differ not in SS
+# I2ss = delta*get_k_demand(wss,rss,X2_ss)
+
+# #X1ss_check = X_c_1_ss  + (I1ss*xi[0,0]) + (I2ss*xi[1,0])
+# #X2ss_check = X_c_2_ss  + (I1ss*xi[0,1]) + (I2ss*xi[1,1])
+# #print 'X1 check: ', X1_ss, X1ss_check
+# #print 'X2 check: ', X2_ss, X2ss_check
+
+
+# print 'RESOURCE CONSTRAINT DIFFERENCE:'
+# print 'RC1: ', X1_ss - Y1ss
+# print 'RC2: ', X2_ss - Y2ss
+# print 'RC1: ', X1_ss - C1ss- delta*K1_d_ss*xi[0,0] - delta*K2_d_ss*xi[1,0]
+# print 'RC2: ', X2_ss - C2ss- delta*K1_d_ss*xi[0,1] - delta*K2_d_ss*xi[1,1]
+
+
+# print("Euler errors")
+# print(error1)
+# print(error2)
+# print(error3)
+
+# print 'kssmat: ', kss
 
 
