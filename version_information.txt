@@ -8,7 +8,7 @@ Version 1:
 
 Adding two firms:
 - 2.0: Extension of 1.1 to have CES production.  Works, but solution sensitive to guesses of K,L for inner fsolve of hh problem.
-- 2.1 Extension of 2.0 Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output.  Trying to solve by having diff btwn r and r_new, w and w_new be zero.  Solves for SS, clearing RC and small euler errors, BUT gives different answer than 2.1_mktclear below (though in the ball park) AND markets not clearing.  Also, still not seeming robust to changes in alpha. (works with alpha=1, 0.9, but not alpha = 0.5)
+- 2.1 Extension of 2.0 Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output.  Trying to solve by having diff btwn r and r_new, w and w_new be zero.  Solves for SS, clearing RC and small euler errors, BUT gives different answer than 2.1_mktclear below (though in the ball park) AND markets not clearing.  Also, still not seeming robust to changes in alpha. (works with alpha=1, 0.9, but not alpha = 0.5) ** Note typed over some code and not running, but could fix.
 - 2.1_mktclear: Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output - use market clearing condition rather than update of interest rates in outer loop.  Got to work with alpha=1, 0.9, 0.91 -  but not with 0.1, 0.2. 0.3, 0.4, 0.5, 0.8, 0.85, 0.88, 0.89, 0.899, 0.92.  Trouble with other alphas - guessing due to initial guesses of r, w - how get this to be more robust?	If I choose an r>0.75 then pretty robust to different values of alpha.
 - 2.2: Extension of 2.1 to have 2 firms, cbar != 0.  Got this working in 2.1_mktclear
 - 2.3 Extend 2.2 to have fixed coeff matrix mapping outputs to cons goods.  Works - market clearing version.

@@ -67,11 +67,11 @@ mindist_SS = 1e-9
 mu = 0.5
 
 # Parameters
-sigma = 1.9 # coeff of relative risk aversion for hh
+sigma = 2.0 # coeff of relative risk aversion for hh
 beta = 0.98 # discount rate
 delta = 0.1 # depreciation rate
 alpha = 0.3 # capital's share of output
-nu = 2.0 # elasticity of labor supply 
+nu = 1.9 # elasticity of labor supply 
 chi_n = 0.5 #utility weight, disutility of labor
 chi_b = 0.2 #utility weight, warm glow bequest motive
 ltilde = 1.0 # maximum hours

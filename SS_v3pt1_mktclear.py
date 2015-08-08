@@ -172,35 +172,48 @@ def get_C(c):
 
 def get_p_c(guesses, r, w):
     '''
-    Generates price of consumption good/producer output
+    Generates price of producer output
 
-    Returns: p_c
+    Returns: p (Mx1) vector of producer prices
     '''
-    p_c1 = guesses[0]
-    p_c2 = guesses[1]
+  
+    p = guesses 
 
-    p_k1 = xi[0,0]*p_c1 + xi[0,1]*p_c2
-    p_k2 = xi[1,0]*p_c1 + xi[1,1]*p_c2
-    k_over_x_1 = k_over_x(p_k1, p_c1, r)
-    l_over_x_1 = l_over_x(p_c1, w)
-    k_over_x_2 = k_over_x(p_k2, p_c2, r)
-    l_over_x_2 = l_over_x(p_c2, w)
-    
-    if p_c1 <= w*l_over_x_1 + p_k1*(r+delta)*k_over_x_1:
-        error1= 1e14
-    else:
-        #error1 =  r - (p_c1 - w*l_over_x_1 - p_k1*delta*k_over_x_1)/(p_k1*(1+r)*k_over_x_1-p_c1)
-        #error1 =  r - (p_c1 - w*l_over_x_1 - p_k1*delta*k_over_x_1)/(p_k1*k_over_x_1-p_c1)
-        error1 = p_c1 - (w*l_over_x_1 + p_k1*(r+delta)*k_over_x_1)
-    if p_c2 <= w*l_over_x_2 + p_k2*(r+delta)*k_over_x_2:
-        error2 = 1e14
-    else:
-        #error2 =  r - (p_c2 - w*l_over_x_2 - p_k2*delta*k_over_x_2)/(p_k2*(1+r)*k_over_x_2-p_c2)
-        #error2 =  r - (p_c2 - w*l_over_x_2 - p_k2*delta*k_over_x_2)/(p_k2*k_over_x_2-p_c2)
-        error2 = p_c2 - (w*l_over_x_2 + p_k2*(r+delta)*k_over_x_2)
-    #print 'prices: ', p_c1, p_c2
-    #print 'pricing errors: ', error1, error2
-    return [error1, error2]
+    p_k = np.dot(xi,p)
+
+    k_over_x_vec = k_over_x(p_k,p,r)
+    l_over_x_vec = l_over_x(p,r)
+
+    error = p - (w*l_over_x_vec + p_k*(r+delta)*k_over_x_vec)
+
+    mask = error <=0
+
+    error[mask] = 1e14
+    print 'pricing errors: ', error
+    return error 
+    # p_c1 = guesses[0]
+    # p_c2 = guesses[1]
+    # p_k1 = xi[0,0]*p_c1 + xi[0,1]*p_c2
+    # p_k2 = xi[1,0]*p_c1 + xi[1,1]*p_c2
+    # k_over_x_1 = k_over_x(p_k1, p_c1, r)
+    # l_over_x_1 = l_over_x(p_c1, w)
+    # k_over_x_2 = k_over_x(p_k2, p_c2, r)
+    # l_over_x_2 = l_over_x(p_c2, w)
+    # if p_c1 <= w*l_over_x_1 + p_k1*delta*k_over_x_1:
+    #     error1= 1e14
+    # else:
+    #     #error1 =  r - (p_c1 - w*l_over_x_1 - p_k1*delta*k_over_x_1)/(p_k1*(1+r)*k_over_x_1-p_c1)
+    #     #error1 =  r - (p_c1 - w*l_over_x_1 - p_k1*delta*k_over_x_1)/(p_k1*k_over_x_1-p_c1)
+    #     error1 = p_c1 - (w*l_over_x_1 + p_k1*(r+delta)*k_over_x_1)
+    # if p_c2 <= w*l_over_x_2 + p_k2*delta*k_over_x_2:
+    #     error2 = 1e14
+    # else:
+    #     #error2 =  r - (p_c2 - w*l_over_x_2 - p_k2*delta*k_over_x_2)/(p_k2*(1+r)*k_over_x_2-p_c2)
+    #     #error2 =  r - (p_c2 - w*l_over_x_2 - p_k2*delta*k_over_x_2)/(p_k2*k_over_x_2-p_c2)
+    #     error2 = p_c2 - (w*l_over_x_2 + p_k2*(r+delta)*k_over_x_2)
+    # #print 'prices: ', p_c1, p_c2
+    # #print 'pricing errors: ', error1, error2
+    # return [error1, error2]
 
 def k_over_x(p_k, p, r):
     '''
