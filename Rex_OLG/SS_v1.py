@@ -4,7 +4,7 @@ import sys
 
 '''
 Author: Rex McArthur
-Last edited August 6, 2015
+Last edited August 10, 2015
 
 This is intended to be a explicitly typed two firm steady state solver.
 Firms will differentiate with different epsilon values, and productivity
@@ -51,7 +51,7 @@ cbar2 = 0. #min of product 2
 chi_b = 0.2 #utility weight for bequest 
 chi_n = 0.5 #disutility weight for labor
 ltilde = 1. #Max labor endowment 
-nu = 1.9
+nu = 2.0
 
 
 #Logical checks
@@ -78,17 +78,36 @@ def get_p_tilde(p1, p2):
     p_tilde = ((p1/alpha)**alpha)*((p2/(1-alpha))**(1-alpha))
     return p_tilde
 
+def get_K(k):
+    K = np.sum(k)
+    return K
 
-def consump(w, r, n, k0, k, p1, p2, p_tilde, j):
+def get_L(l):
+    L = np.sum(l)
+    return L
+
+def get_Y(K,L):
+    Y = (K**alpha) * L**(1-alpha)
+    return Y
+
+def get_r(Y,K):
+    r = (alpha *(Y/K))-delta
+    return r
+
+def get_w(Y,L):
+    w = (1-alpha)*Y/L
+    return w
+
+def consump(w, r, n, k, p1, p2, p_tilde, j):
     k_0 = np.zeros(S)
-    k_0[:-1] = k0
+    k_0[:-1] = k
     k_1 = np.zeros(S)
     k_1[:-1]=k
     #print n.shape
     #print k_0.shape
     #print k_1.shape
 
-    c = (((1+r)*k_0) + w*n*e[j] - k_1 - (p1*cbar1) - (p2*cbar2)/p_tilde)
+    c = (((1+r)*k_0) + w*n*e[j] - k_1 - (p1*cbar1) - (p2*cbar2))/p_tilde
     return c
 
 def MUc(c):
@@ -129,22 +148,28 @@ def l_error(w, L_guess, c, p_tilde, j):
     lerror = (w*MUc(c)*e[j])/p_tilde + MUl(L_guess)
     return lerror
 
-def solve_house(guessvec, r, w, p1, p2, p_tilde, j):
+def solve_house(guessvec, p1, p2, p_tilde, j):
     '''
     '''
     n = guessvec[0:S]
     #print'n', n, n.shape
     k = guessvec[S:]
+    print 'size k: ', k.shape
     #print'k', k, k.shape
 
-    k0 = np.zeros((S-1,1))
+    #k0 = np.zeros((S-1,1))
     #print k0.shape
     #print k0[1:,0].shape
     #print k[:-1].shape
-    k0[1:,0] = k[:-1]
-    k0 = k0.flatten()
+    #k0[1:,0] = k[:-1]
+    #k0 = k0.flatten()
     #print k0
-    c = consump(w,r,n,k0,k,p1,p2,p_tilde,j)
+    K = get_K(k)
+    L = get_L(n) 
+    Y = get_Y(K,L)
+    r = get_r(Y,K) 
+    w = get_w(Y,L)
+    c = consump(w,r,n,k,p1,p2,p_tilde,j)
     #print c
     kerror = k_error(r,c,j)
     lerror = l_error(w,n,c,p_tilde,j)
@@ -153,33 +178,44 @@ def solve_house(guessvec, r, w, p1, p2, p_tilde, j):
     mask1 = n < 0
     mask2 = n > ltilde
     mask3 = k < 0
+    print 'size mask3: ', mask3.shape
+    print 'size kerror: ', kerror.shape
     mask4 = c <= 0
     lerror[mask1] += 1e10
     lerror[mask2] += 1e10
-    kerror[mask3[:-1]] += 1e10
+    #kerror[mask3[:-1]] += 1e10
+    #kerror[mask4[:-1]] += 1e10
+    kerror[mask3] += 1e10
     kerror[mask4[:-1]] += 1e10
     
     totalerror =  list(kerror)+list(lerror)
-    print totalerror
+    #print totalerror
+    print 'labors guess: ', n
+    print 'savings guess: ', k
+    print 'cons guess: ', c
+    print 'max euler error: ', np.absolute(np.asarray(totalerror)).max()
     return totalerror
 
+def steady_state(
 
 #Make an intial guess for r and w
-rguess = .2
-wguess = 1.3
+#rguess =  (1/beta)-1
+#wguess = 0.55
 kguess = .1
 nguess = .4
 
-p1 = get_p(rguess,wguess)
-p2 = get_p(rguess,wguess)
+p1 = 1. #get_p(rguess,wguess)
+p2 = 1. #get_p(rguess,wguess)
 print p1, p2
-p_tilde = get_p_tilde(p1,p2)
+p_tilde = 1. #get_p_tilde(p1,p2)
 print p_tilde
 guessvec = np.ones(2*S-1)
 guessvec[:S] = nguess
 guessvec[S:] = kguess
 
 
-x = optimize.fsolve(solve_house, guessvec, args =(rguess, wguess, p1, p2, p_tilde, 1))
+x = optimize.fsolve(solve_house, guessvec, args =(p1, p2, p_tilde, 1))
+print 'labor supply: ', x[:S]
+print 'savings: ', x[S:]
 
 
