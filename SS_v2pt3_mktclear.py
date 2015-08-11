@@ -563,6 +563,8 @@ I2ss = delta*get_k_demand(wss,rss,X2_ss)
 #print 'X2 check: ', X2_ss, X2ss_check
 
 
+print 'diff btwn r_ss and implied r_ss: ', rss-get_r(X1_ss, K1_d_ss, p_c1_ss)
+
 print 'RESOURCE CONSTRAINT DIFFERENCE:'
 print 'RC1: ', X1_ss - Y1ss
 print 'RC2: ', X2_ss - Y2ss

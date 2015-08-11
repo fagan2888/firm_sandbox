@@ -78,7 +78,7 @@ gamma = np.array([0.3, 0.25, 0.4]) # capital's share of output, shape =(M,)
 #xi = np.array([[0.2, 0.8],[0.3, 0.7]]) # fixed coeff input-output matrix
 #pi = np.array([[0.5, 0.5],[0.1, 0.9]]) # fixed coeff pce-bridge matrix relating output and cons goods
 #pi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff pce-bridge matrix relating output and cons goods
-xi = np.array([[0.2, 0.6, 0.2],[0.1, 0.2, 0.8], [0.6, 0.2, 0.2] ]) # fixed coeff input-output matrix, shape =(M,M)
+xi = np.array([[0.2, 0.6, 0.2],[0.0, 0.2, 0.8], [0.6, 0.2, 0.2] ]) # fixed coeff input-output matrix, shape =(M,M)
 #xi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff input-output matrix
 pi = np.array([[0.4, 0.3, 0.3],[0.1, 0.8, 0.1]]) # fixed coeff pce-bridge matrix relating output and cons goods, shape =(I,M)
 #xi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff input-output matrix
@@ -127,25 +127,26 @@ def get_X(K, L):
     return X
 
 
-def get_w(X, L, p_c):
+def get_w(X, L, p):
     '''
     Parameters: Aggregate output, Aggregate labor
 
     Returns:    Returns to labor
     '''
     #w = (1 - alpha) * X / L
-    w = p_c*((A**((epsilon-1)/epsilon))*((((1-gamma)*X)/L)**(1/epsilon))) 
+    w = p*((A**((epsilon-1)/epsilon))*((((1-gamma)*X)/L)**(1/epsilon))) 
     return w
 
 
-def get_r(X, K, p_c):
+def get_r(X, K, p):
     '''
     Parameters: Aggregate output, Aggregate capital
 
     Returns:    Returns to capital
     '''
     #r = (alpha * (X / K)) - delta
-    r = p_c*((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon))) - delta
+    r = p*((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon))) - delta
+
     return r
 
 
@@ -254,12 +255,15 @@ def get_dist_bq(BQ, j):
 
     return output
 
-def get_cons(w, r, n, k0, k, bq, p_c, p_tilde, j):
+def get_cons(w, r, n, k, bq, p_c, p_tilde, j):
     '''
     Parameters: Aggregate bequests by ability type
 
     Returns:    Bequests by age and ability
     '''
+
+    k0 = np.zeros((S,1))
+    k0[1:,0] = k[:-1,0] # capital start period with
 
     output = (((1+r)*k0) + w*n*e[j] - k + bq - ((p_c*cbar).sum()))/p_tilde
 
@@ -274,9 +278,9 @@ def get_k_demand(w,r,X):
     Returns:    Demand for capital by the firm
     '''
     #output = (gamma*X)/(((r+delta)**epsilon)*(A**(1-epsilon)))
-    output = (X*(A**((1-epsilon)/epsilon)))/(((gamma**(1/epsilon))+
-              (((1-gamma)**(1/epsilon))*(((r+delta)/w)**(epsilon-1))*
-              (((1-gamma)/gamma)**((epsilon-1)/epsilon))))**(epsilon/(epsilon-1)))
+    output = (X/A)*(((gamma**(1/epsilon))+
+              (((1-gamma)**(1/epsilon))*(((r+delta)*(1/w))**(epsilon-1))*
+              (((1-gamma)/gamma)**((epsilon-1)/epsilon))))**(epsilon/(1-epsilon)))
 
     return output
 
@@ -352,9 +356,7 @@ def solve_hh(guesses, r, w, p_c, p_tilde, j):
     n = guesses[S:].reshape((S, 1))        
     BQ = get_BQ(r, k, j)
     bq = get_dist_bq(BQ,j)
-    k0 = np.zeros((S,1))
-    k0[1:,0] = k[:-1,0] # capital start period with
-    c = get_cons(w, r, n, k0, k, bq, p_c, p_tilde, j)
+    c = get_cons(w, r, n, k, bq, p_c, p_tilde, j)
     error1 = foc_k(r, c, j) 
     error2 = foc_l(w, n, c, p_tilde, j) 
     error3 = foc_bq(k, c, p_tilde) 
@@ -426,9 +428,7 @@ def Steady_State(guesses):
         n[:,j] = solutions[S:].reshape(S)
         BQ = get_BQ(r, k[:,j].reshape(S,1), j)
         bq = get_dist_bq(BQ, j).reshape(S,1)
-        k0 = np.zeros((S,1))
-        k0[1:,0] = k[:-1,j] # capital start period with
-        c[:,j] = get_cons(w, r, n[:,j].reshape(S,1), k0[:,0].reshape(S,1), k[:,j].reshape(S,1), bq, p_c, p_tilde, j).reshape(S)
+        c[:,j] = get_cons(w, r, n[:,j].reshape(S,1), k[:,j].reshape(S,1), bq, p_c, p_tilde, j).reshape(S)
 
     c_i = ((p_tilde*np.tile(c,(2,1,1))*np.tile(np.reshape(alpha,(2,1,1)),(1,S,J)))/np.tile(np.reshape(p_c,(2,1,1)),(1,S,J)) 
                 + np.tile(np.reshape(cbar,(2,1,1)),(1,S,J)))
@@ -510,9 +510,7 @@ for j in xrange(J):
     nss[:,j] = solutions[S:].reshape(S)
     BQss = get_BQ(rss, kss[:,j].reshape(S,1), j)
     bqss = get_dist_bq(BQss, j).reshape(S,1)
-    k0ss = np.zeros((S,1))
-    k0ss[1:,0] = kss[:-1,j] # capital start period with
-    css[:,j] = get_cons(wss, rss, nss[:,j].reshape(S,1), k0ss[:,0].reshape(S,1), kss[:,j].reshape(S,1), bqss, p_c_ss, p_tilde_ss, j).reshape(S)
+    css[:,j] = get_cons(wss, rss, nss[:,j].reshape(S,1), kss[:,j].reshape(S,1), bqss, p_c_ss, p_tilde_ss, j).reshape(S)
     # check Euler errors
     error1[:,j] = foc_k(rss, css[:,j].reshape(S,1), j).reshape(S-1) 
     error2[:,j] = foc_l(wss, nss[:,j].reshape(S,1), css[:,j].reshape(S,1), p_tilde_ss, j).reshape(S) 
@@ -560,6 +558,8 @@ Inv_ss = delta*get_k_demand(wss,rss,X_ss) # investment demand - will differ not 
 #X2ss_check = X_c_2_ss  + (I1ss*xi[0,1]) + (I2ss*xi[1,1])
 #print 'X1 check: ', X1_ss, X1ss_check
 #print 'X2 check: ', X2_ss, X2ss_check
+
+print 'diff btwn r_ss and implied r_ss: ', rss-get_r(X_ss, K_d_ss, p_ss)
 
 
 print 'RESOURCE CONSTRAINT DIFFERENCE:'

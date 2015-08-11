@@ -127,14 +127,14 @@ def get_w(X, L, p_c):
     return w
 
 
-def get_r(X, K, p_c):
+def get_r(X, K, p_k, p_c):
     '''
     Parameters: Aggregate output, Aggregate capital
 
     Returns:    Returns to capital
     '''
     #r = (alpha * (X / K)) - delta
-    r = p_c*((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon))) - delta
+    r = (p_c/p_k)*((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon))) - delta
     return r
 
 
@@ -186,13 +186,13 @@ def get_p_c(guesses, r, w):
     k_over_x_2 = k_over_x(p_k2, p_c2, r)
     l_over_x_2 = l_over_x(p_c2, w)
     
-    if p_c1 <= w*l_over_x_1 + p_k1*(r+delta)*k_over_x_1:
+    if p_c1 <= 0.0 :
         error1= 1e14
     else:
         #error1 =  r - (p_c1 - w*l_over_x_1 - p_k1*delta*k_over_x_1)/(p_k1*(1+r)*k_over_x_1-p_c1)
         #error1 =  r - (p_c1 - w*l_over_x_1 - p_k1*delta*k_over_x_1)/(p_k1*k_over_x_1-p_c1)
         error1 = p_c1 - (w*l_over_x_1 + p_k1*(r+delta)*k_over_x_1)
-    if p_c2 <= w*l_over_x_2 + p_k2*(r+delta)*k_over_x_2:
+    if p_c2 <= 0.0 :
         error2 = 1e14
     else:
         #error2 =  r - (p_c2 - w*l_over_x_2 - p_k2*delta*k_over_x_2)/(p_k2*(1+r)*k_over_x_2-p_c2)
@@ -218,6 +218,7 @@ def l_over_x(p, w):
     '''
 
     l_over_x = (1-gamma)*(A**(epsilon-1))*((w/p)**(-1*epsilon))
+
     return l_over_x
 
 
@@ -276,13 +277,15 @@ def get_dist_bq(BQ, j):
 
     return output
 
-def get_cons(w, r, n, k0, k, bq, p_c1, p_c2, p_tilde, j):
+def get_cons(w, r, n, k, bq, p_c1, p_c2, p_tilde, j):
     '''
     Parameters: Aggregate bequests by ability type
 
     Returns:    Bequests by age and ability
     '''
 
+    k0 = np.zeros((S,1))
+    k0[1:,0] = k[:-1,0] # capital start period with
     output = (((1+r)*k0) + w*n*e[j] - k + bq - (p_c1*cbar1) - (p_c2*cbar2))/p_tilde
 
     return output
@@ -374,9 +377,7 @@ def solve_hh(guesses, r, w, p_c1, p_c2, p_tilde, j):
     n = guesses[S:].reshape((S, 1))        
     BQ = get_BQ(r, k, j)
     bq = get_dist_bq(BQ,j)
-    k0 = np.zeros((S,1))
-    k0[1:,0] = k[:-1,0] # capital start period with
-    c = get_cons(w, r, n, k0, k, bq, p_c1, p_c2, p_tilde, j)
+    c = get_cons(w, r, n, k, bq, p_c1, p_c2, p_tilde, j)
     error1 = foc_k(r, c, j) 
     error2 = foc_l(w, n, c, p_tilde, j) 
     error3 = foc_bq(k, c, p_tilde) 
@@ -460,9 +461,7 @@ def Steady_State(guesses):
         n[:,j] = solutions[S:].reshape(S)
         BQ = get_BQ(r, k[:,j].reshape(S,1), j)
         bq = get_dist_bq(BQ, j).reshape(S,1)
-        k0 = np.zeros((S,1))
-        k0[1:,0] = k[:-1,j] # capital start period with
-        c[:,j] = get_cons(w, r, n[:,j].reshape(S,1), k0[:,0].reshape(S,1), k[:,j].reshape(S,1), bq, p_c1, p_c2, p_tilde, j).reshape(S)
+        c[:,j] = get_cons(w, r, n[:,j].reshape(S,1), k[:,j].reshape(S,1), bq, p_c1, p_c2, p_tilde, j).reshape(S)
 
     c1 = (p_tilde*c*alpha)/p_c1 + cbar1
     c2 = (p_tilde*c*(1-alpha))/p_c2 + cbar2
@@ -494,7 +493,7 @@ def Steady_State(guesses):
     K2_d = get_k_demand(p_k2, w, r, X2)
     L2_d = get_l_demand(p_k2, w, r, K2_d)
 
-    #print 'r diffs', r-get_r(X1,K1_d, p_c1), r-get_r(X2,K2_d, p_c2)
+    #print 'r diffs', r-get_r(X1,K1_d, p_k1, p_c1), r-get_r(X2,K2_d, p_k1, p_c2)
 
     # Find value of each firm V = DIV/r in SS
     V1 = (p_c1*X1 - w*L1_d - p_k1*delta*K1_d)/r
@@ -529,8 +528,8 @@ w_guess_init = 1.03
 guesses = [r_guess_init, w_guess_init]
 solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
 #solutions = Steady_State(guesses)
-rss = solutions[0]
-wss = solutions[1]
+rss =  0.677775436559 #solutions[0]
+wss = 1.10564214206 #solutions[1]
 print 'ss r, w: ', rss, wss
 
 
@@ -566,9 +565,7 @@ for j in xrange(J):
     nss[:,j] = solutions[S:].reshape(S)
     BQss = get_BQ(rss, kss[:,j].reshape(S,1), j)
     bqss = get_dist_bq(BQss, j).reshape(S,1)
-    k0ss = np.zeros((S,1))
-    k0ss[1:,0] = kss[:-1,j] # capital start period with
-    css[:,j] = get_cons(wss, rss, nss[:,j].reshape(S,1), k0ss[:,0].reshape(S,1), kss[:,j].reshape(S,1), bqss, p_c1_ss, p_c2_ss, p_tilde_ss, j).reshape(S)
+    css[:,j] = get_cons(wss, rss, nss[:,j].reshape(S,1), kss[:,j].reshape(S,1), bqss, p_c1_ss, p_c2_ss, p_tilde_ss, j).reshape(S)
     # check Euler errors
     error1[:,j] = foc_k(rss, css[:,j].reshape(S,1), j).reshape(S-1) 
     error2[:,j] = foc_l(wss, nss[:,j].reshape(S,1), css[:,j].reshape(S,1), p_tilde_ss, j).reshape(S) 
@@ -608,6 +605,7 @@ L2_d_ss = get_l_demand(p_k2_ss, wss, rss, K2_d_ss)
 V1_ss = (p_c1_ss*X1_ss - wss*L1_d_ss - p_k1_ss*delta*K1_d_ss)/rss
 V2_ss = (p_c2_ss*X2_ss - wss*L2_d_ss - p_k2_ss*delta*K2_d_ss)/rss
 
+
 # Check labor and asset market clearing conditions
 V_ss = V1_ss + V2_ss 
 L_d_ss = L1_d_ss + L2_d_ss 
@@ -636,6 +634,7 @@ I2ss = delta*get_k_demand(p_k2_ss, wss,rss,X2_ss)
 #print 'X1 check: ', X1_ss, X1ss_check
 #print 'X2 check: ', X2_ss, X2ss_check
 
+print 'diff btwn r_ss and implied r_ss: ', rss-get_r(X1_ss, K1_d_ss, p_k1_ss, p_c1_ss)
 
 print 'RESOURCE CONSTRAINT DIFFERENCE:'
 print 'RC1: ', X1_ss - Y1ss
@@ -651,32 +650,5 @@ print(error3)
 
 print 'kssmat: ', kss
 
-# r = 0.77
-# w = 1.03
-# print'p_c errors: ',get_p_c([0.5,0.6],r, w)
-# p_c1 = 0.5
-# p_c2 = 0.6
-# print 'p_k1: ', xi[0,0]*p_c1 + xi[0,1]*p_c2
-# print 'p_k2: ', xi[1,0]*p_c1 + xi[1,1]*p_c2
-# p_k1 = xi[0,0]*p_c1 + xi[0,1]*p_c2
-# p_k2 = xi[1,0]*p_c1 + xi[1,1]*p_c2
-# print 'k_over_x_1 = ', k_over_x(p_k1, p_c1, r)
-# print 'l_over_x_1 = ', l_over_x(p_c1, w)
-# print 'k_over_x_2 = ', k_over_x(p_k2, p_c2, r)
-# print 'l_over_x_2 = ', l_over_x(p_c2, w)
-# X1 = 0.6
-# X2 = 0.6
-# print 'K1_d = ', get_k_demand(p_k1, w, r, X1)
-# K1_d = get_k_demand(p_k1, w, r, X1)
-# print 'L1_d = ', get_l_demand(p_k1, w, r, K1_d)
-# L1_d = get_l_demand(p_k1, w, r, K1_d)
-# print 'K2_d = ', get_k_demand(p_k2, w, r, X2)
-# K2_d = get_k_demand(p_k2, w, r, X2)
-# print 'L2_d = ', get_l_demand(p_k2, w, r, K2_d)
-# L2_d = get_l_demand(p_k2, w, r, K2_d)
-# V1 = (p_c1*X1 - w*L1_d - p_k1*delta*K1_d)/r
-# V2 = (p_c2*X2 - w*L2_d - p_k2*delta*K2_d)/r
-# print 'V1: ', V1
-# print 'V2: ', V2
 
 
