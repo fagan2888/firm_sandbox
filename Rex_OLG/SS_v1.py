@@ -148,13 +148,13 @@ def l_error(w, L_guess, c, p_tilde, j):
     lerror = (w*MUc(c)*e[j])/p_tilde + MUl(L_guess)
     return lerror
 
-def solve_house(guessvec, p1, p2, p_tilde, j):
+def solve_house(guessvec, r, w, p1, p2, p_tilde, j):
     '''
     '''
     n = guessvec[0:S]
     #print'n', n, n.shape
     k = guessvec[S:]
-    print 'size k: ', k.shape
+    #print 'size k: ', k.shape
     #print'k', k, k.shape
 
     #k0 = np.zeros((S-1,1))
@@ -178,8 +178,8 @@ def solve_house(guessvec, p1, p2, p_tilde, j):
     mask1 = n < 0
     mask2 = n > ltilde
     mask3 = k < 0
-    print 'size mask3: ', mask3.shape
-    print 'size kerror: ', kerror.shape
+    #print 'size mask3: ', mask3.shape
+    #print 'size kerror: ', kerror.shape
     mask4 = c <= 0
     lerror[mask1] += 1e10
     lerror[mask2] += 1e10
@@ -190,17 +190,54 @@ def solve_house(guessvec, p1, p2, p_tilde, j):
     
     totalerror =  list(kerror)+list(lerror)
     #print totalerror
-    print 'labors guess: ', n
-    print 'savings guess: ', k
-    print 'cons guess: ', c
+    #print 'labors guess: ', n
+    #print 'savings guess: ', k
+    #print 'cons guess: ', c
     print 'max euler error: ', np.absolute(np.asarray(totalerror)).max()
     return totalerror
 
-def steady_state(
+def steady_state(guesses):
+    '''
+    Parameters: 
+    Returns:
+    '''
+    r = guesses[0]
+    w = guesses[1]
+
+    #Find corresponding prices of consumption goods
+    #p_c1 = get_p(r,w)
+    #p_c2 = get_p(r,w)
+    #p_tilde = get_p_tilde(p_c1, p_c2)
+    p_c1 = 1
+    p_c2 = 1
+    p_tilde = 1
+
+    k_guess = np.ones(S-1)*.05
+    n_guess = np.ones(S)*.3
+    guesses = np.zeros(2*S-1)
+    guesses[:S]= n_guess
+    guesses[S:] = k_guess
+
+    
+    solutions = optimize.fsolve(solve_house, guesses, args = (r, w, p_c1, p_c2, p_tilde, 1), xtol = 1e-9, col_deriv = 1)
+    new_n_vec = solutions[:S] 
+    new_k_vec = solutions[S:]
+    new_K = get_K(new_k_vec)
+    new_L = get_L(new_n_vec)
+    new_Y = get_Y(new_K,new_L)
+    new_r = get_r(new_Y,new_K)
+    new_w = get_w(new_Y,new_L)
+    print new_r, new_w
+    new_c = consump(new_w, new_r, new_n_vec, new_k_vec, p_c1, p_c2, p_tilde, 1)
+    return list((r-new_r, w-new_w))
+
+
+
+    return 
 
 #Make an intial guess for r and w
-#rguess =  (1/beta)-1
-#wguess = 0.55
+rguess =  (1/beta)-1
+wguess = 0.55
 kguess = .1
 nguess = .4
 
@@ -213,9 +250,9 @@ guessvec = np.ones(2*S-1)
 guessvec[:S] = nguess
 guessvec[S:] = kguess
 
-
-x = optimize.fsolve(solve_house, guessvec, args =(p1, p2, p_tilde, 1))
-print 'labor supply: ', x[:S]
-print 'savings: ', x[S:]
+guessvec = np.array((rguess,wguess))
+x = optimize.fsolve(steady_state, guessvec)
+print 'rate ', x[0]
+print 'wage ', x[1]
 
 
