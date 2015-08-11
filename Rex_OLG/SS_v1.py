@@ -79,26 +79,44 @@ def get_p_tilde(p1, p2):
     return p_tilde
 
 def get_K(k):
+    '''
+    Returns market capital by summing individual capital
+    '''
     K = np.sum(k)
     return K
 
 def get_L(l):
+    '''
+    Returns market labor by summing individual labor
+    '''
     L = np.sum(l)
     return L
 
 def get_Y(K,L):
+    '''
+    Returns total output
+    '''
     Y = (K**alpha) * L**(1-alpha)
     return Y
 
 def get_r(Y,K):
+    '''
+    Returns the interest rate determined by the Capital Stock and Output
+    '''
     r = (alpha *(Y/K))-delta
     return r
 
 def get_w(Y,L):
+    '''
+    returns the wage determined by the output and Labor stock
+    '''
     w = (1-alpha)*Y/L
     return w
 
 def consump(w, r, n, k, p1, p2, p_tilde, j):
+    '''
+    returns S long vector of consumption for each period of life
+    '''
     k_0 = np.zeros(S)
     k_0[:-1] = k
     k_1 = np.zeros(S)
@@ -205,12 +223,12 @@ def steady_state(guesses):
     w = guesses[1]
 
     #Find corresponding prices of consumption goods
-    #p_c1 = get_p(r,w)
-    #p_c2 = get_p(r,w)
-    #p_tilde = get_p_tilde(p_c1, p_c2)
-    p_c1 = 1
-    p_c2 = 1
-    p_tilde = 1
+    p_c1 = get_p(r,w)
+    p_c2 = get_p(r,w)
+    p_tilde = get_p_tilde(p_c1, p_c2)
+    #p_c1 = 1
+    #p_c2 = 1
+    #p_tilde = 1
 
     k_guess = np.ones(S-1)*.05
     n_guess = np.ones(S)*.3
@@ -219,21 +237,56 @@ def steady_state(guesses):
     guesses[S:] = k_guess
 
     
-    solutions = optimize.fsolve(solve_house, guesses, args = (r, w, p_c1, p_c2, p_tilde, 1), xtol = 1e-9, col_deriv = 1)
+    solutions = optimize.fsolve(solve_house, guesses, args = (r, w,
+        p_c1, p_c2, p_tilde, 1), xtol = 1e-9, col_deriv = 1)
     new_n_vec = solutions[:S] 
     new_k_vec = solutions[S:]
+    print 'n, k ', new_n_vec, new_k_vec
     new_K = get_K(new_k_vec)
     new_L = get_L(new_n_vec)
     new_Y = get_Y(new_K,new_L)
     new_r = get_r(new_Y,new_K)
     new_w = get_w(new_Y,new_L)
-    print new_r, new_w
     new_c = consump(new_w, new_r, new_n_vec, new_k_vec, p_c1, p_c2, p_tilde, 1)
     return list((r-new_r, w-new_w))
 
+def solve(guesses):
 
+    x = optimize.fsolve(steady_state, guessvec)
+    r_ss = x[0]
+    w_ss = x[1]
+    print 'rate ', r_ss
+    print 'wage ', w_ss
+    r = guesses[0]
+    w = guesses[1]
 
-    return 
+    #Find corresponding prices of consumption goods
+    p_c1 = get_p(r,w)
+    p_c2 = get_p(r,w)
+    p_tilde = get_p_tilde(p_c1, p_c2)
+    #p_c1 = 1
+    #p_c2 = 1
+    #p_tilde = 1
+
+    k_guess = np.ones(S-1)*.05
+    n_guess = np.ones(S)*.3
+    guesses = np.zeros(2*S-1)
+    guesses[:S]= n_guess
+    guesses[S:] = k_guess
+
+    solutions = optimize.fsolve(solve_house, guesses, args = (r, w,
+        p_c1, p_c2, p_tilde, 1), xtol = 1e-9, col_deriv = 1)
+    new_n_vec = solutions[:S] 
+    new_k_vec = solutions[S:]
+    print 'n, k ', new_n_vec, new_k_vec
+    new_K = get_K(new_k_vec)
+    new_L = get_L(new_n_vec)
+    new_Y = get_Y(new_K,new_L)
+    new_r = get_r(new_Y,new_K)
+    new_w = get_w(new_Y,new_L)
+    new_c = consump(new_w, new_r, new_n_vec, new_k_vec, p_c1, p_c2, p_tilde, 1)
+    return new_c
+    
 
 #Make an intial guess for r and w
 rguess =  (1/beta)-1
@@ -241,18 +294,20 @@ wguess = 0.55
 kguess = .1
 nguess = .4
 
-p1 = 1. #get_p(rguess,wguess)
-p2 = 1. #get_p(rguess,wguess)
-print p1, p2
-p_tilde = 1. #get_p_tilde(p1,p2)
-print p_tilde
-guessvec = np.ones(2*S-1)
-guessvec[:S] = nguess
-guessvec[S:] = kguess
-
 guessvec = np.array((rguess,wguess))
 x = optimize.fsolve(steady_state, guessvec)
-print 'rate ', x[0]
-print 'wage ', x[1]
+r_ss = x[0]
+w_ss = x[1]
+print 'rate ', r_ss
+print 'wage ', w_ss
+p1_ss = get_p(r_ss, w_ss)
+p2_ss = get_p(r_ss, w_ss)
+p_tilde_ss = get_p_tilde(p1_ss, p2_ss)
+print 'Prices: ', p1_ss, p2_ss, p_tilde_ss
+c1ss
+
+
+
+
 
 
