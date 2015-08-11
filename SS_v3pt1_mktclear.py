@@ -66,21 +66,21 @@ TPImindist   = Cut-off distance between iterations for TPI
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
 beta = 0.98 # discount rate
-alpha = np.array([0.29, 1.0-0.29]) # preference parameter - share of good i in composite consumption, shape =(I,), shares must sum to 1
+alpha = np.array([0.29, 0.2, (1-0.2-0.29)]) # preference parameter - share of good i in composite consumption, shape =(I,), shares must sum to 1
 #alpha = 0.29 # preference parameter - share of good 1 in composite consumption
-cbar = np.array([0.001, 0.002]) # min cons of each of I goods, shape =(I,)
-delta = np.array([0.1, 0.12, 0.15]) # depreciation rate, shape =(M,)
+cbar = np.array([0.001, 0.002, 0.000]) # min cons of each of I goods, shape =(I,)
+delta = np.array([0.1, 0.12, 0.15, 0.11]) # depreciation rate, shape =(M,)
 #delta = np.array([0.1, 0.1]) # depreciation rate, shape =(M,)
 #delta = 0.1 # depreciation rate
 A = 1.0 # Total factor productivity
-gamma = np.array([0.3, 0.25, 0.4]) # capital's share of output, shape =(M,)
+gamma = np.array([0.3, 0.25, 0.4, 0.33]) # capital's share of output, shape =(M,)
 #gamma = np.array([0.3, 0.3])
 #gamma = 0.3 # capital's share of output
-xi = np.array([[0.2, 0.6, 0.2],[0.0, 0.2, 0.8], [0.6, 0.2, 0.2] ]) # fixed coeff input-output matrix, shape =(M,M)
+xi = np.array([[0.2, 0.5, 0.2, 0.1],[0.0, 0.2, 0.8, 0.0], [0.4, 0.2, 0.2, 0.2], [0.3, 0.3, 0.1, 0.3] ]) # fixed coeff input-output matrix, shape =(M,M)
 #xi = np.array([[0.2, 0.8],[0.3, 0.7]]) 
-pi = np.array([[0.4, 0.3, 0.3],[0.1, 0.8, 0.1]]) # fixed coeff pce-bridge matrix relating output and cons goods, shape =(I,M)
+pi = np.array([[0.2, 0.3, 0.3, 0.2],[0.1, 0.8, 0.1, 0.0],[0.25, 0.25, 0.25, 0.25]]) # fixed coeff pce-bridge matrix relating output and cons goods, shape =(I,M)
 #pi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff pce-bridge matrix relating output and cons goods, shape =(I,M)
-epsilon = np.array([0.55, 0.6, 0.62]) # elasticity of substitution between capital and labor, shape =(M,)
+epsilon = np.array([0.55, 0.6, 0.62, 0.6]) # elasticity of substitution between capital and labor, shape =(M,)
 #epsilon = np.array([0.6, 0.6])
 #epsilon = 0.6 # elasticity of substitution between capital and labor
 nu = 2.0 # elasticity of labor supply 
@@ -91,8 +91,8 @@ e = [0.5, 1.0, 1.2, 1.7] # effective labor units for the J types
 #e = [1.0, 1.0, 1.0, 1.0] # effective labor units for the J types
 S = 5 # periods in life of hh
 J = 4 # number of lifetime income groups
-I = 2 # number of consumption goods
-M = 3 # number of production industries
+I = 3 # number of consumption goods
+M = 4 # number of production industries
 surv_rate = np.array([0.99, 0.98, 0.6, 0.4, 0.0]) # probability of surviving to next period
 #surv_rate = np.array([1.0, 1.0, 1.0, 1.0, 0.0]) # probability of surviving to next period
 mort_rate = 1.0-surv_rate # probability of dying at the end of current period

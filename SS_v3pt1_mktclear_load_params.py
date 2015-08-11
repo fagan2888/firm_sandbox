@@ -63,7 +63,7 @@ TPImindist   = Cut-off distance between iterations for TPI
 ------------------------------------------------------------------------
 '''
 # Specify model dimensions
-S = 5 # periods in life of hh
+S = 17 # periods in life of hh
 J = 4 # number of lifetime income groups
 I = 17 # number of consumption goods
 M = 19 # number of production industries
@@ -106,6 +106,7 @@ alpha_sheet = pd.read_excel('Firm_Parameters_FullertonRogers.xlsx', sheetname='a
 alpha = alpha_sheet.as_matrix()
 alpha =alpha[0:17,1]
 alpha =alpha.astype(float)
+alpha = alpha/alpha.sum() # ensure the alpha vector sums to one 
 #print 'alpha shape: ', alpha.shape
 #print alpha
 
@@ -119,7 +120,9 @@ cbar =cbar.astype(float)
 
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
-beta = 0.98 # discount rate
+#beta = 0.96 # discount rate
+beta_annual = 0.96 # discount rate
+beta = beta_annual**(round(80.0/S))
 #alpha = np.array([0.29, 1.0-0.29]) # preference parameter - share of good i in composite consumption, shape =(I,), shares must sum to 1
 #alpha = 0.29 # preference parameter - share of good 1 in composite consumption
 #cbar = np.array([0.001, 0.002]) # min cons of each of I goods, shape =(I,)
@@ -143,8 +146,9 @@ chi_b = 0.2 #utility weight, warm glow bequest motive
 ltilde = 1.0 # maximum hours
 e = [0.5, 1.0, 1.2, 1.7] # effective labor units for the J types
 #e = [1.0, 1.0, 1.0, 1.0] # effective labor units for the J types
-
-surv_rate = np.array([0.99, 0.98, 0.6, 0.4, 0.0]) # probability of surviving to next period
+#surv_rate = np.ones((S))
+#surv_rate[-5:] = np.array([0.99, 0.98, 0.6, 0.4, 0.0])
+surv_rate = np.array([0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.98, 0.6, 0.4, 0.0]) # probability of surviving to next period
 #surv_rate = np.array([1.0, 1.0, 1.0, 1.0, 0.0]) # probability of surviving to next period
 mort_rate = 1.0-surv_rate # probability of dying at the end of current period
 surv_rate[-1] = 0.0
@@ -252,6 +256,7 @@ def get_p(guesses, r, w):
 
     error[mask] = 1e14
 
+    #print 'price errors: ', error
     return error 
 
 
@@ -557,8 +562,8 @@ def Steady_State(guesses):
     # Check and punish violations
     if r <= 0:
         error1 += 1e9
-    if r > 1:
-        error1 += 1e9
+    #if r > 1:
+    #    error1 += 1e9
     if w <= 0:
         error2 += 1e9
 
@@ -567,8 +572,8 @@ def Steady_State(guesses):
     
 
 # Solve SS
-r_guess_init = 0.77
-w_guess_init = 1.03 
+r_guess_init = 0.5
+w_guess_init = 1.03
 guesses = [r_guess_init, w_guess_init]
 solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
 #solutions = Steady_State(guesses)
@@ -601,7 +606,7 @@ for j in xrange(J):
     else:
         guesses = np.append(kss[:,(j-1)], nss[:,(j-1)])
     #solutions = opt.fsolve(solve_hh, guesses, args=(rss, wss, j), xtol=1e-9, col_deriv=1)
-    out = opt.fsolve(solve_hh, guesses, args=(rss, wss, p_c_ss, p_tilde_ss, j), xtol=1e-9, col_deriv=1, full_output=1)
+    out = opt.fsolve(solve_hh, guesses, args=(rss, wss, p_c_ss, p_tilde_ss, j), xtol=1e-11, col_deriv=1, full_output=1)
    # print'solution found flag', out[2], out[3]
     #print 'fsovle output: ', out[1]
     solutions = out[0]
@@ -625,7 +630,7 @@ C_ss = get_C(c_i_ss)
 # Find total demand for output from each sector from consumption
 X_c_ss = np.dot(np.reshape(C_ss,(1,I)),pi)
 guesses = X_c_ss/I
-x_sol = opt.fsolve(solve_output, guesses, args=(p_k_ss, wss, rss, X_c_ss), xtol=1e-9, col_deriv=1)
+x_sol = opt.fsolve(solve_output, guesses, args=(p_k_ss, wss, rss, X_c_ss), xtol=1e-11, col_deriv=1)
 X_ss = x_sol
 
 # find aggregate savings and labor supply
@@ -637,7 +642,7 @@ K_d_ss = get_k_demand(p_k_ss, wss, rss, X_ss)
 L_d_ss = get_l_demand(p_k_ss, wss, rss, K_d_ss)
 
 
-print 'r diffs', rss-get_r(X_ss,K_d_ss,p_k_ss,p_ss)
+print 'r diffs', rss-(get_r(X_ss,K_d_ss,p_k_ss,p_ss))[0]
 
 # Find value of each firm V = DIV/r in SS
 V_ss = (p_ss*X_ss - wss*L_d_ss - p_k_ss*delta*K_d_ss)/rss
@@ -654,19 +659,20 @@ Iss = np.reshape(delta*get_k_demand(p_k_ss, wss,rss,X_ss),(1,M)) # investment de
 
 
 print 'RESOURCE CONSTRAINT DIFFERENCE:'
-print 'RC: ', X_ss - Yss
-print 'RC2: ', X_ss - np.dot(pi.transpose(),C_ss)- np.dot(delta*xi.transpose(),K_d_ss)
-print 'RC3: ', X_ss - np.dot(np.reshape(C_ss,(1,I)),pi)- np.dot(delta*K_d_ss,xi)
-print 'RC4: ',  np.reshape(X_c_ss  + np.dot(Iss,xi) - X_ss,(M))
+print 'RC: ', np.absolute(X_ss - Yss).max()
+print 'RC2: ', np.absolute(X_ss - np.dot(pi.transpose(),C_ss)- np.dot(delta*xi.transpose(),K_d_ss)).max()
+print 'RC3: ', np.absolute(X_ss - np.dot(np.reshape(C_ss,(1,I)),pi)- np.dot(delta*K_d_ss,xi)).max()
+print 'RC4: ',  np.absolute(np.reshape(X_c_ss  + np.dot(Iss,xi) - X_ss,(M))).max()
 
 #print 'RC3: ', X_ss - pi[0,0]*C_ss[0] - pi[1,0]*C_ss[1]- delta*(xi[0,0]*K_d_ss[0] +xi[0,1]*K_d_ss[1]+xi[0,2]*K_d_ss[2])
 
 
 
-print("Euler errors")
-print(error1)
-print(error2)
-print(error3)
+#print("Euler errors")
+#print(error1)
+#print(error2)
+#print(error3)
+print 'max euler errors: ', np.absolute(error1).max(), np.absolute(error2).max(), np.absolute(error3).max() 
 
-print 'kssmat: ', kss
+#print 'kssmat: ', kss
 

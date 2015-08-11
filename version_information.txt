@@ -20,7 +20,7 @@ Adding two firms:
 Adding dynamic firms:
 - 3.0: Extend 2.1_mktclear to have dynamic firms.  Test with two firms first.  Asset and labor market clearing.  Works.
 - 3.1: Extend 3.0 to have M firms (so similar to 2.5, but with dynamic firms).  Works.
-- 3.1_mktclear_load_params: Extend 3.1 to import params from Fullerton Rogers for I=17, M=19
+- 3.1_mktclear_load_params: Extend 3.1 to import params from Fullerton Rogers for I=17, M=19.  Works. Note that need to adjust starting value for interest rate downwards as number of periods of economic life of agents increases.  Success with S=5 to S=17.
 
 
 Transition path:
