@@ -1,0 +1,222 @@
+\documentclass[letterpaper,12pt]{article}
+
+\usepackage{threeparttable}
+\usepackage{geometry}
+\geometry{letterpaper,tmargin=1in,bmargin=1in,lmargin=1.25in,rmargin=1.25in}
+\usepackage[format=hang,font=normalsize,labelfont=bf]{caption}
+\usepackage{amsmath}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{delarray}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{lscape}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{float,color}
+\usepackage[pdftex]{graphicx}
+\usepackage{pdfsync}
+\usepackage{verbatim}
+\usepackage{placeins}
+\usepackage{geometry}
+\usepackage{pdflscape}
+\synctex=1
+\usepackage{hyperref}
+\hypersetup{colorlinks,linkcolor=red,urlcolor=blue,citecolor=red}
+\usepackage{bm}
+
+
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{acknowledgement}[theorem]{Acknowledgement}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conclusion}[theorem]{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}{Definition} % Number definitions on their own
+\newtheorem{derivation}{Derivation} % Number derivations on their own
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{proposition}{Proposition} % Number propositions on their own
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{solution}[theorem]{Solution}
+\newtheorem{summary}[theorem]{Summary}
+\bibliographystyle{aer}
+\newcommand\ve{\epsilon}
+%\renewcommand\theenumi{\roman{enumi}}
+\newcommand\norm[1]{\left\lVert#1\right\rVert}
+
+\begin{document}
+
+\title{Algorithms for solving for SS and Time Path of OG model with heterogeneous static firms}
+\date{\today}
+\author{}
+\maketitle
+
+\begin{spacing}{1.5}
+\pagenumbering{arabic}
+
+
+The model assumed for these solutions is one without taxes or bequests.  Endogenous labor.  $J$ ability types.  $M$ firms.  $I$ consumption goods.  $T$ periods from initial state to the steady state.
+
+\section{Steady State}
+
+\begin{enumerate}
+\item Guess $\bar{r}$ and $\bar{w}$
+\item Determine output prices, $\bar{p}_{m}$ using zero profit condition and firm FOCS together. These imply:
+
+\begin{equation}
+\bar{p}_{m}  = \left[(1-\gamma_{m})\left(\frac{\bar{w}}{\bar{A}_{m}}\right)^{1-\epsilon_{m}} + \gamma_{m}\left(\frac{(\bar{r}+\delta_{m})}{\bar{A}_{m}}\right)^{1-\epsilon_{m}} \right]^{\frac{1}{1-\epsilon_{m}}}
+\end{equation}
+\item Determine consumption goods prices using the fixed coefficient matrix $\Pi$ mapping output goods to consumption goods: $\bar{p}^{c}_{i} = \sum_{m=1}^{M}\pi_{i,m}\bar{p}_{m}$
+\item Determine the price of the composite consumption good: $\tilde{p} =  \prod_{i=1}^{I}\left( \frac{\bar{p}^{c}_{i}}{\alpha_{i}} \right)^{\alpha_{i}}$
+\item With prices $\bar{r}, \bar{w}, \bar{p}^{c}_{i}, \tilde{p}$, we can solve the HH problem.  We can solve the problem for each type $j$ separately using a root-finding algorithm to solve for the $2\times S$ unknowns from $2\times S$ equations: the HH FOCs for the choices of savings and labor supply in each year of life.  This yields $\bar{b}_{j,s}$ and $\bar{n}_{j,s}$.
+\item Using the HH's budget constraint and the vector of prices, we can solve for composite consumption, $\tilde{c}_{j,s}$.
+\item We can solve for the total demand for each consumption good using the necessary conditions from the HH's subutility function.  These imply (where $\bar{c}_{i}$ is the minimum expenditure on good $i$): 
+
+\begin{equation}
+\bar{c}_{i,j,s}  = \frac{\alpha_{i} \tilde{p}_{s}\tilde{c}_{j,s}}{\bar{p}^{c}_{i}} + \bar{c}_{i},
+\end{equation}
+
+\item Summing over $J$ and $S$ we can get total demand for consumption of good $i$: $\bar{C}_{i} = \sum_{j=1}^{J}\sum_{s=1}^{S} \bar{c}_{i,j,s}$
+\item With $\bar{C}_{i}$ and prices, we can solve for the demand for output from each industry using the resource constraint, the fixed coefficient matrices $\Pi$ and $\Xi$ (where $\Xi$ is the fixed coefficient input-output matrix - mapping production goods to capital goods), and the demand for investment.
+	\begin{itemize}
+	\item Investment demand for industry $m$ in the SS is given by: $\bar{I}_{m} = \delta_{m}\bar{K}_{m}$
+	\item Demand for industry $m$ output from consumption is given by: $\bar{X}^{c}_{m} = \sum_{i=1}^{I} \pi_{i,m}\bar{C}_{i}$
+	\item Demand for industry $m$ output from investment demand is given by: $\bar{X}^{i}_{m} =  \sum_{j=1}^{M} \xi_{j,m}\bar{I}_{j} = \sum_{j=1}^{M} \xi_{j,m}\delta_{j}\bar{K}_{j} $
+	\item And we can use the firm's FOC for capital, labor, and the production function together,  to write the demand for capital as a function of output and factor prices: 
+	
+	\begin{equation}
+	\label{eqn:k_demand2}
+	\bar{K}_{m} = \frac{\bar{X}_{m}}{\bar{A}_{m}}\left[\gamma_{m}^{\frac{1}{\epsilon_{m}}}+(1-\gamma_{m})^{\frac{1}{\epsilon_{m}}}\left(\frac{\bar{r}+\delta_{m}}{\bar{w}}\right)^{\epsilon_{m}-1}\left(\frac{1-\gamma_{m}}{\gamma_{m}}	\right)^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}\right]^{\frac{\epsilon_{m}}{1-\epsilon_{m}}}
+	\end{equation}
+	
+	\item Resource constraint for industry $m$: 
+	\begin{equation}
+	\begin{split}
+	\bar{X}_{m} &= \bar{X}^{c}_{m} + \bar{X}^{i}_{m} \\
+	&= \sum_{i=1}^{I} \pi_{i,m}\bar{C}_{i} +\sum_{j=1}^{M} \xi_{j,m}\bar{I}_{j} \\
+	 &= \sum_{i=1}^{I} \pi_{i,m}\bar{C}_{i} +\sum_{j=1}^{M} \xi_{j,m}\delta_{j}\bar{K}_{j}  \\
+	 &= \sum_{i=1}^{I} \pi_{i,m}\bar{C}_{i} +\sum_{j=1}^{M} \xi_{j,m}\delta_{j} \frac{\bar{X}_{j}}{\bar{A}_{j}}\left[\gamma_{j}^{\frac{1}{\epsilon_{j}}}+(1-\gamma_{j})^{\frac{1}{\epsilon_{j}}}\left(\frac{\bar{r}+\delta_{j}}{\bar{w}}\right)^{\epsilon_{j}-1}\left(\frac{1-\gamma_{j}}{\gamma_{j}}	\right)^{\frac{\epsilon_{j}-1}{\epsilon_{j}}}\right]^{\frac{\epsilon_{j}}{1-\epsilon_{j}}}
+	\end{split}
+	\end{equation}
+	
+	\item The above is a system of $M$ equations and $M$ unknowns: a root finder can be used to solve for $\bar{X}_{m}$
+	\end{itemize}
+
+\item With $\bar{X}_{m}$ and prices, we can solve for the demand for capital from each industry.  We'll use the capital market clearing condition ($\sum_{m=1}^{M} \bar{K}_{m}=\sum_{j=1}^{J}\sum_{s=1}^{S} \bar{b}_{j,s}$) and the firm's FOC for capital together to find these demands.  Denoting the supply of capital as $\bar{K}^{s}=\sum_{j=1}^{J}\sum_{s=1}^{S} \bar{b}_{j,s}$, we have:
+
+	\begin{equation}
+	\bar{K}_{m} = \bar{K}^{s} - \sum_{k \neq m} \gamma_{k}\bar{X}_{k}\left(\frac{\bar{p}_{m}\left(\frac{\gamma_{m}\bar{X}_{m}}{\bar{K}_{m}}\right)\bar{A}_{m}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{\bar{p}_{k}}\bar{A}_{k}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+	\end{equation}
+	This is a system of $M$ nonlinear equations that can be solved for $\bar{K}_{m}$ using a root finding algorithm.
+	
+\item With $\bar{X}_{m}$ and prices, we can solve for the demand for labor from each industry.  We'll use the labor market clearing condition ($\sum_{m=1}^{M} \bar{EL}_{m}=\sum_{j=1}^{J}\sum_{s=1}^{S}e_{j,s} \bar{n}_{j,s}$) and the firm's FOC for labor together to find these demands.  Denoting the supply of labor as $\bar{L}^{s}=\sum_{j=1}^{J}\sum_{s=1}^{S} e_{j,s}\bar{n}_{j,s}$, we have:
+
+	\begin{equation}
+	\bar{EL}_{m} = \bar{L}^{s} - \sum_{k\neq m} (1- \gamma_{k})\bar{X}_{k}\left(\frac{\bar{p}_{m}\left(\frac{(1-\gamma_{m})\bar{X}_{m}}{\bar{EL}_{m}}\right)\bar{A}_{m}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{\bar{p}_{k}}\bar{A}_{k}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+	\end{equation}
+	This is a system of $M$ nonlinear equations that can be solved for $\bar{EL}_{m}$ using a root finding algorithm.
+	
+\item Use the demands for capital and labor found above in the FOC for a particular firm $m$ (can be any firm), this will imply and interest rate and wage rate.  Call these $r_{new}$ and $w_{new}$, respectively.  We have:
+
+	\begin{equation}
+	r_{new} = \bar{p}_{m}\left(\frac{\gamma_{m}\bar{X}_{m}}{\bar{K}_{m}}\right)\bar{A}_{m}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}, \forall \ m
+	\end{equation}
+
+	\begin{equation}
+	w_{new} = \bar{p}_{m}\left(\frac{(1-\gamma_{m})\bar{X}_{m}}{\bar{EL}_{m}}\right)\bar{A}_{m}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}, \forall \ m
+	\end{equation}
+
+\item If $r_{new}$ and $w_{new}$ are equal to $\bar{r}$ and $\bar{w}$ guessed, then stop.  Else, update the guesses over $\bar{r}$ and $\bar{w}$ and repeat.  One can use $r_{new}$ and $w_{new}$ to inform the new guess.
+
+\end{enumerate}
+
+
+
+\section{Time Path}
+
+\begin{enumerate}
+\item Guess the time paths for factor prices: $r_{t}$ and $w_{t}$
+\item Determine time path for output prices, $p_{m,t}$ using zero profit condition and firm FOCS together. These imply:
+
+\begin{equation}
+p_{m,t}  = \left[(1-\gamma_{m})\left(\frac{w_{t}}{A_{m,t}}\right)^{1-\epsilon_{m}} + \gamma_{m}\left(\frac{(r_{t}+\delta_{m})}{A_{m,t}}\right)^{1-\epsilon_{m}} \right]^{\frac{1}{1-\epsilon_{m}}}
+\end{equation}
+\item Determine the time path for consumption goods prices using the fixed coefficient matrix $\Pi$ mapping output goods to consumption goods: $p^{c}_{i,t} = \sum_{m=1}^{M}\pi_{i,m}p_{m,t}$
+\item Determine time path for the price of the composite consumption good: $\tilde{p}_{t} =  \prod_{i=1}^{I}\left( \frac{p^{c}_{i,t}}{\alpha_{i}} \right)^{\alpha_{i}}$
+\item With the time paths of prices $r_{t}, w_{t}, p^{c}_{i,t}, \tilde{p}_{t}$, we can solve the HH problem.  I think we can solve the path for each type $j$ and cohort separately using a root-finding algorithm to solve for the $2\times S$ unknowns from $2\times S$ equations: the HH FOCs for the choices of savings and labor supply.  This yields, $b_{j,s,t}$ and $n_{j,s,t}$.
+\item Using the HH's budget constraint and the vector of prices, we can solve for composite consumption, $\tilde{c}_{j,s,t}$.
+\item We can solve for the total demand for each consumption good using the necessary conditions from the HH's subutility function.  These imply (where $\bar{c}_{i}$ is the minimum expenditure on good $i$): 
+
+\begin{equation}
+c_{i,j,s,t}  = \frac{\alpha_{i} \tilde{p}_{s,t}\tilde{c}_{j,s,t}}{p_{i,t}} + \bar{c}_{i},
+\end{equation}
+
+\item Summing over $J$ and $S$ we can get time path for the demand for consumption of good $i$: $C_{i,t} = \sum_{j=1}^{J}\sum_{s=1}^{S} c_{i,j,s,t}$
+\item With $C_{i,t}$ and prices, we can solve for the demand for output from each industry using the resource constraint, the fixed coefficient matrices $\Pi$ and $\Xi$ (where $\Xi$ is the fixed coefficient input-output matrix - mapping production goods to capital goods), and the demand for investment.
+	\begin{itemize}
+	\item Investment demand for industry $m$ in period $t$ is given by: $I_{m,t} = K_{m,t+1} - (1 - \delta_{m})K_{m,t}$
+	\item Demand for industry $m$ output in period $t$ from consumption is given by: $X^{c}_{m,t} = \sum_{i=1}^{I} \pi_{i,m}C_{i,t}$
+	\item Demand for industry $m$ output in period $t$ from investment demand is given by: $X^{i}_{m,t} =  \sum_{j=1}^{M} \xi_{j,m}I_{j,t} = \sum_{j=1}^{M} \xi_{j,m}\left(K_{j,t+1} - (1\delta_{m})K_{j,t}\right) $
+	\item And we can use the firm's FOC for capital, labor, and the production function together,  to write the demand for capital in each period as a function of output and factor prices: 
+	
+	\begin{equation}
+	\label{eqn:k_demand2}
+	K_{m,t} = \frac{X_{m,t}}{A_{m,t}}\left[\gamma_{m}^{\frac{1}{\epsilon_{m}}}+(1-\gamma_{m})^{\frac{1}{\epsilon_{m}}}\left(\frac{r_{t}+\delta_{m}}{w_{t}}\right)^{\epsilon_{m}-1}\left(\frac{1-\gamma_{m}}{\gamma_{m}}	\right)^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}\right]^{\frac{\epsilon_{m}}{1-\epsilon_{m}}}
+	\end{equation}
+	
+	\item Resource constraint for industry $m$ in year $t$: 
+	\begin{equation}
+	\begin{split}
+	X_{m,t} &= X^{c}_{m,t} + X^{i}_{m,t} \\
+	&= \sum_{i=1}^{I} \pi_{i,m}C_{i,t} +\sum_{j=1}^{M} \xi_{j,m}I_{j,t} \\
+	 &= \sum_{i=1}^{I} \pi_{i,m}C_{i,t} +\sum_{j=1}^{M} \xi_{j,m}\left(K_{j,t+1} - (1\delta_{j})K_{j,t} \right)  \\
+	 &= \sum_{i=1}^{I} \pi_{i,m}C_{i,t} ... \\
+	 & \quad +\sum_{j=1}^{M} \xi_{j,m}\left[\left( \frac{X_{j,t+1}}{A_{j,t+1}}\left[\gamma_{j}^{\frac{1}{\epsilon_{j}}}+(1-\gamma_{j})^{\frac{1}{\epsilon_{j}}}\left(\frac{r_{t+1}+\delta_{j}}{w_{t+1}}\right)^{\epsilon_{j}-1}\left(\frac{1-\gamma_{j}}{\gamma_{j}}\right)^{\frac{\epsilon_{j}-1}{\epsilon_{j}}}\right]^{\frac{\epsilon_{j}}{1-\epsilon_{j}}}\right) ... \right. \\
+	 & \left. \quad - (1-\delta_{j})\left( \frac{X_{j,t}}{A_{j,t}}\left[\gamma_{j}^{\frac{1}{\epsilon_{j}}}+(1-\gamma_{j})^{\frac{1}{\epsilon_{j}}}\left(\frac{r_{t}+\delta_{j}}{w_{t}}\right)^{\epsilon_{j}-1}\left(\frac{1-\gamma_{j}}{\gamma_{j}}	\right)^{\frac{\epsilon_{j}-1}{\epsilon_{j}}}\right]^{\frac{\epsilon_{j}}{1-\epsilon_{j}}}\right) \right]
+	\end{split}
+	\end{equation}
+	
+	\item The above is a system of $M\times T$ equations and $M\times T$ unknowns: a root finder can be used to solve for $X_{m,t}$
+	\item Alternatively, one can leverage the recursive nature of the problem.  In particular, since we know the steady state solution, we have $K_{m,T}$ for all $m$.  Thus we can find $I_{m,T-1} = K_{m,T} - (1\delta_{m})K_{m,T-1}$.  Then using the equations above, we can solve a system of $M$ equations and $M$ unknowns to find $X_{m,T-1}$.  We then repeat this for each period from $T-1$ back to the initial period.  This yields the time path of output demand, $X_{m,t}$ without having to solve a very large system of equations at once.
+	\end{itemize}
+
+\item With the time path for output demand, $X_{m,t}$, and prices, we can solve for the demand for capital from each industry in each period $t$.  We'll use the capital market clearing condition ($\sum_{m=1}^{M} K_{m,t}=\sum_{j=1}^{J}\sum_{s=1}^{S} b_{j,s,t}$) and the firm's FOC for capital together to find these demands.  Denoting the supply of capital as $K^{s}_{t}=\sum_{j=1}^{J}\sum_{s=1}^{S} b_{j,s,t}$, we have:
+
+	\begin{equation}
+	K_{m,t} = K^{s,t} - \sum_{k \neq m} \gamma_{k}X_{k,t}\left(\frac{p_{m,t}\left(\frac{\gamma_{m}X_{m,t}}{K_{m,t}}\right)A_{m,t}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{p_{k,t}}A_{k,t}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+	\end{equation}
+	For each year, $t$, this is a system of $M$ nonlinear equations that can be solved for $K_{m,t}$ using a root finding algorithm.
+	
+\item With the time path for output demand, $X_{m,t}$ and prices, we can solve for the demand for labor from each industry.  We'll use the labor market clearing condition ($\sum_{m=1}^{M} EL_{m,t}=\sum_{j=1}^{J}\sum_{s=1}^{S}e_{j,s} n_{j,s,t}$) and the firm's FOC for labor together to find these demands.  Denoting the supply of labor as $L^{s,t}=\sum_{j=1}^{J}\sum_{s=1}^{S} e_{j,s}n_{j,s,t}$, we have:
+
+	\begin{equation}
+	EL_{m,t} = L^{s,t} - \sum_{k\neq m} (1- \gamma_{k})X_{k,t}\left(\frac{p_{m,t}\left(\frac{(1-\gamma_{m})X_{m,t}}{EL_{m,t}}\right)A_{m,t}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{p_{k,t}}A_{k,t}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+	\end{equation}
+	For each year, $t$, this is a system of $M$ nonlinear equations that can be solved for $EL_{m,t}$ using a root finding algorithm.
+	
+\item Use the demands for capital and labor found above in the FOC for a particular firm, this will imply and interest rate and wage rate in each period, $t$.  Call these $r_{new,t}$ and $w_{new,t}$, respectively.  We have:
+
+	\begin{equation}
+	r_{new,t} = p_{m}\left(\frac{\gamma_{m}X_{m,t}}{K_{m,t}}\right)A_{m,t}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}, \forall \ m, t
+	\end{equation}
+
+	\begin{equation}
+	w_{new} = p_{m,t}\left(\frac{(1-\gamma_{m})X_{m,t}}{EL_{m,t}}\right)A_{m,t}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}, \forall \ m, t
+	\end{equation}
+
+\item If $r_{new,t}$ and $w_{new,t}$ are equal the time paths $r_{t}$ and $w_{t}$ guessed, then stop.  Else, update the guesses over $r_{t}$ and $w_{t}$ and repeat.  One can use $r_{new,t}$ and $w_{new,t}$ to inform the new guess. 
+
+\end{enumerate}
+
+\end{spacing}
+\end{document}

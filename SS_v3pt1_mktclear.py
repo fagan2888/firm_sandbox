@@ -66,36 +66,34 @@ TPImindist   = Cut-off distance between iterations for TPI
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
 beta = 0.98 # discount rate
-alpha = np.array([0.29, 1.0-0.29]) # preference parameter - share of good i in composite consumption, shape =(I,), shares must sum to 1
-cbar = np.array([0.000, 0.000]) # min cons of each of I goods, shape =(I,)
-#delta = np.array([0.1, 0.1]) # depreciation rate
-#delta = np.array([0.1, 0.12]) # depreciation rate
-delta = np.array([0.1, 0.12, 0.15]) # depreciation rate, shape =(M,)
+alpha = np.array([0.29, 0.2, (1-0.2-0.29)]) # preference parameter - share of good i in composite consumption, shape =(I,), shares must sum to 1
+#alpha = 0.29 # preference parameter - share of good 1 in composite consumption
+cbar = np.array([0.001, 0.002, 0.000]) # min cons of each of I goods, shape =(I,)
+delta = np.array([0.1, 0.12, 0.15, 0.11]) # depreciation rate, shape =(M,)
+#delta = np.array([0.1, 0.1]) # depreciation rate, shape =(M,)
+#delta = 0.1 # depreciation rate
 A = 1.0 # Total factor productivity
-#gamma = np.array([0.3, 0.25]) # capital's share of output
-#gamma = np.array([0.3, 0.3]) # capital's share of output
-gamma = np.array([0.3, 0.25, 0.4]) # capital's share of output, shape =(M,)
-#xi = np.array([[0.2, 0.8],[0.3, 0.7]]) # fixed coeff input-output matrix
-#pi = np.array([[0.5, 0.5],[0.1, 0.9]]) # fixed coeff pce-bridge matrix relating output and cons goods
-#pi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff pce-bridge matrix relating output and cons goods
-xi = np.array([[0.2, 0.6, 0.2],[0.0, 0.2, 0.8], [0.6, 0.2, 0.2] ]) # fixed coeff input-output matrix, shape =(M,M)
-#xi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff input-output matrix
-pi = np.array([[0.4, 0.3, 0.3],[0.1, 0.8, 0.1]]) # fixed coeff pce-bridge matrix relating output and cons goods, shape =(I,M)
-#xi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff input-output matrix
-#xi = np.array([[0.0, 1.0],[0.0, 1.0]]) # fixed coeff input-output matrix
-#epsilon = np.array([0.6, 0.6]) # elasticity of substitution between capital and labor
-epsilon = np.array([0.55, 0.6, 0.62]) # elasticity of substitution between capital and labor, shape =(M,)
+gamma = np.array([0.3, 0.25, 0.4, 0.33]) # capital's share of output, shape =(M,)
+#gamma = np.array([0.3, 0.3])
+#gamma = 0.3 # capital's share of output
+xi = np.array([[0.2, 0.5, 0.2, 0.1],[0.0, 0.2, 0.8, 0.0], [0.4, 0.2, 0.2, 0.2], [0.3, 0.3, 0.1, 0.3] ]) # fixed coeff input-output matrix, shape =(M,M)
+#xi = np.array([[0.2, 0.8],[0.3, 0.7]]) 
+pi = np.array([[0.2, 0.3, 0.3, 0.2],[0.1, 0.8, 0.1, 0.0],[0.25, 0.25, 0.25, 0.25]]) # fixed coeff pce-bridge matrix relating output and cons goods, shape =(I,M)
+#pi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff pce-bridge matrix relating output and cons goods, shape =(I,M)
+epsilon = np.array([0.55, 0.6, 0.62, 0.6]) # elasticity of substitution between capital and labor, shape =(M,)
+#epsilon = np.array([0.6, 0.6])
+#epsilon = 0.6 # elasticity of substitution between capital and labor
 nu = 2.0 # elasticity of labor supply 
 chi_n = 0.5 #utility weight, disutility of labor
 chi_b = 0.2 #utility weight, warm glow bequest motive
 ltilde = 1.0 # maximum hours
-e = np.array([0.5, 1.0, 1.2, 1.7]) # effective labor units for the J types, shape =(J,)
+e = [0.5, 1.0, 1.2, 1.7] # effective labor units for the J types
 #e = [1.0, 1.0, 1.0, 1.0] # effective labor units for the J types
 S = 5 # periods in life of hh
 J = 4 # number of lifetime income groups
-I = 2 # number of consumption goods
-M = 3 # number of production industries
-surv_rate = np.array([0.99, 0.98, 0.6, 0.4, 0.0]) # probability of surviving to next period, shape =(S,)
+I = 3 # number of consumption goods
+M = 4 # number of production industries
+surv_rate = np.array([0.99, 0.98, 0.6, 0.4, 0.0]) # probability of surviving to next period
 #surv_rate = np.array([1.0, 1.0, 1.0, 1.0, 0.0]) # probability of surviving to next period
 mort_rate = 1.0-surv_rate # probability of dying at the end of current period
 surv_rate[-1] = 0.0
@@ -105,7 +103,7 @@ mort_mat = np.tile(mort_rate.reshape(S,1),(1,J)) # matrix of mortality rates
 surv_rate1 = np.ones((S,1))# prob start at age S
 surv_rate1[1:,0] = np.cumprod(surv_rate[:-1], dtype=float)
 omega = np.ones((S,J))*surv_rate1# number of each age alive at any time
-lambdas = np.array([0.5, 0.2, 0.2, 0.1])# fraction of each cohort of each type, shape =(J,)
+lambdas = np.array([0.5, 0.2, 0.2, 0.1])# fraction of each cohort of each type
 weights = omega*lambdas/((omega*lambdas).sum()) # weights - dividing so weights sum to 1
 
 # Functions and Definitions
@@ -134,18 +132,19 @@ def get_w(X, L, p):
     Returns:    Returns to labor
     '''
     #w = (1 - alpha) * X / L
-    w = p*((A**((epsilon-1)/epsilon))*((((1-gamma)*X)/L)**(1/epsilon))) 
+    w = p*((A**((epsilon-1)/epsilon))*((((1-gamma)*X)/L)**(1/epsilon)))
+
     return w
 
 
-def get_r(X, K, p):
+def get_r(X, K, p_k, p):
     '''
     Parameters: Aggregate output, Aggregate capital
 
     Returns:    Returns to capital
     '''
     #r = (alpha * (X / K)) - delta
-    r = p*((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon))) - delta
+    r = (p/p_k)*((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon))) - delta
 
     return r
 
@@ -182,15 +181,48 @@ def get_C(c_i):
 
     return C
 
-def get_p(r, w):
+def get_p(guesses, r, w):
     '''
-    Generates price of consumption producer output
+    Generates price of producer output
 
-    Returns: p_c
+    Returns: p (Mx1) vector of producer prices
     '''
-    p = (((1-gamma)*((w/A)**(1-epsilon)))+(gamma*(((r+delta)/A)**(1-epsilon))))**(1/(1-epsilon))
 
-    return p
+    p = guesses 
+
+    p_k = np.dot(xi,p)
+
+    k_over_x_vec = k_over_x(p_k,p,r)
+    l_over_x_vec = l_over_x(p,w)
+
+    error = p - (w*l_over_x_vec + p_k*(r+delta)*k_over_x_vec)
+
+    mask = p < 0.0
+
+    error[mask] = 1e14
+
+    return error 
+
+
+def k_over_x(p_k, p, r):
+    '''
+    Returns K/X for a firm
+    Useful in determining price of output
+    '''
+
+    k_over_x = gamma*(A**(epsilon-1))*(((p_k/p)*(r+delta))**(-1*epsilon))
+
+    return k_over_x
+
+def l_over_x(p, w):
+    '''
+    Returns EL/X for a firm
+    Useful in determining price of output
+    '''
+
+    l_over_x = (1-gamma)*(A**(epsilon-1))*((w/p)**(-1*epsilon))
+
+    return l_over_x
 
 def get_p_c(p):
     '''
@@ -242,7 +274,7 @@ def get_BQ(r, k, j):
     '''
 
     output = (1 + r) * (k*weights[:,j].reshape(S,1)*mort_mat[:,j].reshape(S,1)).sum()
-
+    
     return output
     
 def get_dist_bq(BQ, j):
@@ -261,7 +293,6 @@ def get_cons(w, r, n, k, bq, p_c, p_tilde, j):
 
     Returns:    Bequests by age and ability
     '''
-
     k0 = np.zeros((S,1))
     k0[1:,0] = k[:-1,0] # capital start period with
 
@@ -270,7 +301,7 @@ def get_cons(w, r, n, k, bq, p_c, p_tilde, j):
     return output
     
 
-def get_k_demand(w,r,X):
+def get_k_demand(p_k,w,r,X):
     '''
     Parameters: Interest rate
                 Output
@@ -279,19 +310,19 @@ def get_k_demand(w,r,X):
     '''
     #output = (gamma*X)/(((r+delta)**epsilon)*(A**(1-epsilon)))
     output = (X/A)*(((gamma**(1/epsilon))+
-              (((1-gamma)**(1/epsilon))*(((r+delta)*(1/w))**(epsilon-1))*
+              (((1-gamma)**(1/epsilon))*(((r+delta)*(p_k/w))**(epsilon-1))*
               (((1-gamma)/gamma)**((epsilon-1)/epsilon))))**(epsilon/(1-epsilon)))
 
     return output
 
-def get_l_demand(w,r,K):
+def get_l_demand(p_k,w,r,K):
     '''
     Parameters: Wage rate
                 Capital demand
 
     Returns:    Demand for labor by the firm
     '''
-    output = K*((1-gamma)/gamma)*(((r+delta)/w)**epsilon)
+    output = K*((1-gamma)/gamma)*(((r+delta)*(p_k/w))**epsilon)
 
     return output
 
@@ -341,7 +372,7 @@ def foc_bq(K_guess, c, p_tilde):
     Returns:
         Value of Euler error.
     '''
-    error = MUc(c[-1,:])/p_tilde -  MUb(K_guess[-1, :])
+    error = (MUc(c[-1,:]))/p_tilde -  MUb(K_guess[-1, :])
     return error
 
 
@@ -384,10 +415,11 @@ def solve_hh(guesses, r, w, p_c, p_tilde, j):
     return list(error1.flatten()) + list(error2.flatten()) + list(error3.flatten()) 
 
 
-def solve_output(guesses, w, r, X_c):
+def solve_output(guesses,p_k,w,r,X_c):
     X = guesses
-    Inv = np.reshape(delta*get_k_demand(w,r,X),(1,M)) # investment demand - will differ not in SS
+    Inv = np.reshape(delta*get_k_demand(p_k,w,r,X),(1,M)) # investment demand - will differ not in SS
     errors = np.reshape(X_c  + np.dot(Inv,xi) - X,(M))
+
     return errors
 
 def Steady_State(guesses):
@@ -400,11 +432,15 @@ def Steady_State(guesses):
     r = guesses[0]
     w = guesses[1]
 
-    # find prices of consumption goods
-    p = get_p(r,w)
+    # find prices of consumption and capital goods
+    p_guesses = np.ones(M)
+    p = opt.fsolve(get_p, p_guesses, args=(r, w), xtol=1e-9, col_deriv=1)
     p_c = get_p_c(p)
     p_tilde = get_p_tilde(p_c)
-    #print 'prices ', p, p_c, p_tilde
+    p_k = np.dot(xi,p)
+
+
+    #print 'prices ', p, p_c, p_k, p_tilde
 
     # Make initial guesses for capital and labor
     K_guess_init = np.ones((S, J)) * 0.05
@@ -430,8 +466,8 @@ def Steady_State(guesses):
         bq = get_dist_bq(BQ, j).reshape(S,1)
         c[:,j] = get_cons(w, r, n[:,j].reshape(S,1), k[:,j].reshape(S,1), bq, p_c, p_tilde, j).reshape(S)
 
-    c_i = ((p_tilde*np.tile(c,(2,1,1))*np.tile(np.reshape(alpha,(2,1,1)),(1,S,J)))/np.tile(np.reshape(p_c,(2,1,1)),(1,S,J)) 
-                + np.tile(np.reshape(cbar,(2,1,1)),(1,S,J)))
+    c_i = ((p_tilde*np.tile(c,(I,1,1))*np.tile(np.reshape(alpha,(I,1,1)),(1,S,J)))/np.tile(np.reshape(p_c,(I,1,1)),(1,S,J)) 
+                + np.tile(np.reshape(cbar,(I,1,1)),(1,S,J)))
     #print 'c_i', c_i
 
     # Find total consumption of each good
@@ -441,7 +477,7 @@ def Steady_State(guesses):
     # Find total demand for output from each sector from consumption
     X_c = np.dot(np.reshape(C,(1,I)),pi)
     guesses = X_c/I
-    x_sol = opt.fsolve(solve_output, guesses, args=(w, r, X_c), xtol=1e-9, col_deriv=1)
+    x_sol = opt.fsolve(solve_output, guesses, args=(p_k, w, r, X_c), xtol=1e-9, col_deriv=1)
 
     X = x_sol
 
@@ -451,15 +487,21 @@ def Steady_State(guesses):
 
 
     #### Need to solve for labor and capital demand from each industry
-    K_d = get_k_demand(w, r, X)
-    L_d = get_l_demand(w, r, K_d)
+    K_d = get_k_demand(p_k, w, r, X)
+    L_d = get_l_demand(p_k, w, r, K_d)
 
 
-    #print 'r diffs', r-get_r(X[0],K_d[0]), r-get_r(X[1],K_d[1])
+    # Find value of each firm V = DIV/r in SS
+    V = (p*X - w*L_d - p_k*delta*K_d)/r
 
-    # Check labor and capital market clearing conditions
-    error1 = K_s - K_d.sum()
+    # Check labor and asset market clearing conditions
+    error1 = K_s - V.sum()
     error2 = L_s - L_d.sum()
+    
+
+    print 'asset market diff: ', error1
+    print 'labor market diff: ', error2
+    print 'r, w: ', r, w
 
     # Check and punish violations
     if r <= 0:
@@ -469,6 +511,7 @@ def Steady_State(guesses):
     if w <= 0:
         error2 += 1e9
 
+    #print 'r and w errors: ', error1, error2
     return [error1, error2]
     
 
@@ -482,10 +525,15 @@ rss = solutions[0]
 wss = solutions[1]
 print 'ss r, w: ', rss, wss
 
-p_ss = get_p(rss,wss)
+
+# find prices of consumption and capital goods
+p_guesses = np.ones(M)
+p_ss = opt.fsolve(get_p, p_guesses, args=(rss, wss), xtol=1e-9, col_deriv=1)
 p_c_ss = get_p_c(p_ss)
 p_tilde_ss = get_p_tilde(p_c_ss)
-print 'SS cons prices: ', p_ss, p_c_ss, p_tilde_ss
+p_k_ss = np.dot(xi,p_ss)
+p_guesses = [1.0,1.0]
+print 'SS cons prices: ', p_ss, p_c_ss, p_k_ss, p_tilde_ss
 
 K_guess_init = np.ones((S, J)) * 0.05
 L_guess_init = np.ones((S, J)) * 0.3
@@ -516,55 +564,52 @@ for j in xrange(J):
     error2[:,j] = foc_l(wss, nss[:,j].reshape(S,1), css[:,j].reshape(S,1), p_tilde_ss, j).reshape(S) 
     error3[:,j] = foc_bq(kss[:,j].reshape(S,1), css[:,j].reshape(S,1), p_tilde_ss)
 
-c_i_ss = ((p_tilde_ss*np.tile(css,(2,1,1))*np.tile(np.reshape(alpha,(2,1,1)),(1,S,J)))/np.tile(np.reshape(p_c_ss,(2,1,1)),(1,S,J)) 
-                + np.tile(np.reshape(cbar,(2,1,1)),(1,S,J)))
+c_i_ss = ((p_tilde_ss*np.tile(css,(I,1,1))*np.tile(np.reshape(alpha,(I,1,1)),(1,S,J)))/np.tile(np.reshape(p_c_ss,(I,1,1)),(1,S,J)) 
+                + np.tile(np.reshape(cbar,(I,1,1)),(1,S,J)))
+
 # Find total consumption of each good
 C_ss = get_C(c_i_ss)
+#print 'total cons by good: ', C_ss
 
 # Find total demand for output from each sector from consumption
 X_c_ss = np.dot(np.reshape(C_ss,(1,I)),pi)
-
-print 'X_c_ss', X_c_ss
-
-guesses = [X_c_ss/I]
-x_sol_ss = opt.fsolve(solve_output, guesses, args=(wss, rss, X_c_ss), xtol=1e-9, col_deriv=1)
-
-X_ss = x_sol_ss
+guesses = X_c_ss/I
+x_sol = opt.fsolve(solve_output, guesses, args=(p_k_ss, wss, rss, X_c_ss), xtol=1e-9, col_deriv=1)
+X_ss = x_sol
 
 # find aggregate savings and labor supply
 K_s_ss, K_constr = get_K(kss)
 L_s_ss = get_L(nss)
 
 #### Need to solve for labor and capital demand from each industry
-K_d_ss = get_k_demand(wss, rss, X_ss)
-L_d_ss = get_l_demand(wss, rss, K_d_ss)
+K_d_ss = get_k_demand(p_k_ss, wss, rss, X_ss)
+L_d_ss = get_l_demand(p_k_ss, wss, rss, K_d_ss)
 
-# Check labor and capital market clearing conditions
-cap_diff = K_s_ss - K_d_ss.sum()
+
+print 'r diffs', rss-get_r(X_ss,K_d_ss,p_k_ss,p_ss)
+
+# Find value of each firm V = DIV/r in SS
+V_ss = (p_ss*X_ss - wss*L_d_ss - p_k_ss*delta*K_d_ss)/rss
+
+
+# Check labor and asset market clearing conditions
+asset_diff = K_s_ss - V_ss.sum()
 labor_diff = L_s_ss - L_d_ss.sum()
-print 'Market clearing diffs: ', cap_diff, labor_diff
+print 'Market clearing diffs: ', asset_diff, labor_diff
 
 Yss = get_X(K_d_ss,L_d_ss)
 
-#print 'cons: ', C1ss, C2ss
-#print 'Kss: ', K1_d_ss, K2_d_ss
-#print 'Lss: ', L1_d_ss, L2_d_ss
-#print 'K/L: ', K1_d_ss/L1_d_ss, K2_d_ss/L2_d_ss
-#print 'Xss: ', X1_ss, X2_ss, Y1ss, Y2ss
-
-Inv_ss = delta*get_k_demand(wss,rss,X_ss) # investment demand - will differ not in SS
-
-#X1ss_check = X_c_1_ss  + (I1ss*xi[0,0]) + (I2ss*xi[1,0])
-#X2ss_check = X_c_2_ss  + (I1ss*xi[0,1]) + (I2ss*xi[1,1])
-#print 'X1 check: ', X1_ss, X1ss_check
-#print 'X2 check: ', X2_ss, X2ss_check
-
-print 'diff btwn r_ss and implied r_ss: ', rss-get_r(X_ss, K_d_ss, p_ss)
+Iss = np.reshape(delta*get_k_demand(p_k_ss, wss,rss,X_ss),(1,M)) # investment demand - will differ not in SS
 
 
 print 'RESOURCE CONSTRAINT DIFFERENCE:'
-print 'RC1: ', X_ss - Yss
-print 'RC2: ', X_ss - X_c_ss- (np.dot(np.reshape(delta*K_d_ss,(1,M)),xi))
+print 'RC: ', X_ss - Yss
+print 'RC2: ', X_ss - np.dot(pi.transpose(),C_ss)- np.dot(delta*xi.transpose(),K_d_ss)
+print 'RC3: ', X_ss - np.dot(np.reshape(C_ss,(1,I)),pi)- np.dot(delta*K_d_ss,xi)
+print 'RC4: ',  np.reshape(X_c_ss  + np.dot(Iss,xi) - X_ss,(M))
+
+#print 'RC3: ', X_ss - pi[0,0]*C_ss[0] - pi[1,0]*C_ss[1]- delta*(xi[0,0]*K_d_ss[0] +xi[0,1]*K_d_ss[1]+xi[0,2]*K_d_ss[2])
+
 
 
 print("Euler errors")
@@ -573,5 +618,4 @@ print(error2)
 print(error3)
 
 print 'kssmat: ', kss
-
 

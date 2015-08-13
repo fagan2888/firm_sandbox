@@ -206,6 +206,17 @@ def get_p_tilde(p_c):
     p_tilde = ((p_c/alpha)**alpha).prod()
     return p_tilde
 
+
+def get_sum_Xk(r,p,X):
+
+    x_sum = (gamma*X*((((r+delta)/p)*(A**((1-epsilon)/epsilon)))**(-1*epsilon))).sum()-(gamma*X*((((r+delta)/p)*(A**((1-epsilon)/epsilon)))**(-1*epsilon)))
+    return x_sum 
+
+def get_sum_Xl(w,p,X):
+
+    x_sum = ((1-gamma)*X*(((w/p)*(A**((1-epsilon)/epsilon)))**(-1*epsilon))).sum()-((1-gamma)*X*(((w/p)*(A**((1-epsilon)/epsilon)))**(-1*epsilon)))
+    return x_sum 
+
 def MUc(c):
     '''
     Parameters: Consumption
@@ -390,6 +401,38 @@ def solve_output(guesses, w, r, X_c):
     errors = np.reshape(X_c  + np.dot(Inv,xi) - X,(M))
     return errors
 
+def solve_k(guesses, p, K_s, X):
+    K = guesses
+    numerator = (p*((gamma*(X/K))**(1/epsilon))*(A**((epsilon-1)/1))-delta)[0]
+    x_func = gamma*X*((((numerator+delta)/p)*(A**((1-epsilon)/1)))**(-1*epsilon))
+    
+    error = K-K_s+x_func.sum()-x_func
+
+    # Check and punish constraing violations
+    mask1 = K <= 0
+
+    error[mask1] = 1e14
+
+    #print 'solve k error: ', error
+    #print 'k_m guess: ', K
+    return error 
+
+def solve_l(guesses, p, L_s, X):
+    L = guesses
+    numerator = (p*(((1-gamma)*(X/L))**(1/epsilon))*(A**(epsilon-1)))[0]
+    x_func = (1-gamma)*X*(((numerator/p)*(A**((1-epsilon)/1)))**(-1*epsilon))
+    
+    error = L-L_s+x_func.sum()-x_func
+
+    # Check and punish constraing violations
+    mask1 = L <= 0
+
+    error[mask1] = 1e14
+
+    #print 'solve l error: ', error
+    #print 'L_m guess: ', L
+    return error 
+
 def Steady_State(guesses):
     '''
     Parameters: Steady state distribution of capital guess as array
@@ -449,23 +492,54 @@ def Steady_State(guesses):
     K_s, K_constr = get_K(k)
     L_s = get_L(n)
 
+    # Find factor demand from each industry as a function of factor supply
+    #K_d = K_s - get_sum_Xk(r,p,X)
+    #L_d = L_s - get_sum_Xl(w,p,X)
+    k_m_guesses = (X/X.sum())*K_s
+    l_m_guesses = (X/X.sum())*L_s
+    K_d = opt.fsolve(solve_k, k_m_guesses, args=(p, K_s, X), xtol=1e-9, col_deriv=1)
+    L_d = opt.fsolve(solve_l, l_m_guesses, args=(p, L_s, X), xtol=1e-9, col_deriv=1)
+
 
     #### Need to solve for labor and capital demand from each industry
-    K_d = get_k_demand(w, r, X)
-    L_d = get_l_demand(w, r, K_d)
+    K_d_check = get_k_demand(w, r, X)
+    L_d_check = get_l_demand(w, r, K_d_check)
 
+    ## Solve for factor demands in a third way
+    #r_vec = np.array([r, r, r])
+    #K_d_3 = K_s - (gamma*X*((((r_vec+delta)/p)*(A**((1-epsilon)/1)))**(-1*epsilon))).sum() - (gamma*X*((((r_vec+delta)/p)*(A**((1-epsilon)/1)))**(-1*epsilon))) 
+    #print ' three k diffs: ', K_d-K_d_3, K_d-K_d_check, K_d_3-K_d_check
+
+    # get implied factor prices
+    r_new = get_r(X, K_d, p)[0]
+    w_new = get_w(X, L_d, p)[0]
+    #print 'all r_new values: ', get_r(X, K_d, p)
+    #print 'all alt r_new values: ', get_r(X,K_d_check,p)
+    #print 'alt r values: ', get_r(X,K_d_check,p)
+    print 'diff btwn r: ', get_r(X, K_d, p) - get_r(X,K_d_check,p)
+    print 'diff btwn k: ', K_d-K_d_check
+    print 'diff btwn w: ', get_w(X, L_d, p) - get_w(X,L_d_check,p)
+    print 'diff btwn l: ', L_d-L_d_check
+    #print 'all w_new values: ', get_w(X, L_d, p)
+    #print 'all alt w_new values: ', get_w(X,L_d_check,p)
 
     #print 'r diffs', r-get_r(X[0],K_d[0]), r-get_r(X[1],K_d[1])
+    print 'market clearing: ', K_s - K_d.sum(),  L_s - L_d.sum()
+    print 'market clearing 2: ', K_s - K_d_check.sum(), L_s - L_d_check.sum()
 
     # Check labor and capital market clearing conditions
-    error1 = K_s - K_d.sum()
-    error2 = L_s - L_d.sum()
+    #error1 = K_s - K_d.sum()
+    #error2 = L_s - L_d.sum()
+    error1 = r_new - r
+    error2 = w_new - w
+    print 'errors: ', error1, error2
+    print 'r, rnew, w, wnew: ', r, r_new, w, w_new
 
     # Check and punish violations
     if r <= 0:
         error1 += 1e9
-    if r > 1:
-        error1 += 1e9
+    #if r > 1:
+    #    error1 += 1e9
     if w <= 0:
         error2 += 1e9
 
@@ -559,12 +633,27 @@ Inv_ss = delta*get_k_demand(wss,rss,X_ss) # investment demand - will differ not 
 #print 'X1 check: ', X1_ss, X1ss_check
 #print 'X2 check: ', X2_ss, X2ss_check
 
+
+# Find factor demand from each industry as a function of factor supply
+k_m_guesses = (X_ss/X_ss.sum())*K_s_ss
+l_m_guesses = (X_ss/X_ss.sum())*L_s_ss
+K_d_ss = opt.fsolve(solve_k, k_m_guesses, args=(p_ss, K_s_ss, X_ss), xtol=1e-9, col_deriv=1)
+L_d_ss = opt.fsolve(solve_l, l_m_guesses, args=(p_ss, L_s_ss, X_ss), xtol=1e-9, col_deriv=1)
+#K_d_ss = K_s_ss - get_sum_Xk(rss,p_ss,X_ss)
+#L_d_ss = L_s_ss - get_sum_Xl(wss,p_ss,X_ss)
+
+K_d_check_ss = get_k_demand(wss, rss, X_ss)
+L_d_check_ss = get_l_demand(wss, rss, K_d_check_ss)
+
+
 print 'diff btwn r_ss and implied r_ss: ', rss-get_r(X_ss, K_d_ss, p_ss)
+print 'diff btwn r_ss and implied r_ss take 2: ', rss-get_r(X_ss, K_d_check_ss, p_ss)
 
 
 print 'RESOURCE CONSTRAINT DIFFERENCE:'
 print 'RC1: ', X_ss - Yss
-print 'RC2: ', X_ss - X_c_ss- (np.dot(np.reshape(delta*K_d_ss,(1,M)),xi))
+print 'RC2: ', X_ss - X_c_ss- (np.dot(np.reshape(delta*K_d_check_ss,(1,M)),xi))
+print 'RC3: ', X_ss - X_c_ss- (np.dot(np.reshape(delta*K_d_ss,(1,M)),xi))
 
 
 print("Euler errors")
@@ -573,5 +662,6 @@ print(error2)
 print(error3)
 
 print 'kssmat: ', kss
+
 
 

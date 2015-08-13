@@ -116,25 +116,25 @@ def get_X(K, L):
     return X
 
 
-def get_w(X, L):
+def get_w(X, L, p_c):
     '''
     Parameters: Aggregate output, Aggregate labor
 
     Returns:    Returns to labor
     '''
     #w = (1 - alpha) * X / L
-    w = (A**((epsilon-1)/epsilon))*((((1-gamma)*X)/L)**(1/epsilon)) 
+    w = p_c*((A**((epsilon-1)/epsilon))*((((1-gamma)*X)/L)**(1/epsilon)))
     return w
 
 
-def get_r(X, K):
+def get_r(X, K, p_c):
     '''
     Parameters: Aggregate output, Aggregate capital
 
     Returns:    Returns to capital
     '''
     #r = (alpha * (X / K)) - delta
-    r = (A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon)) - delta
+    r = p_c*((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon))) - delta
     return r
 
 
@@ -252,9 +252,9 @@ def get_k_demand(w,r,X):
     Returns:    Demand for capital by the firm
     '''
     #output = (gamma*X)/(((r+delta)**epsilon)*(A**(1-epsilon)))
-    output = (X*(A**((1-epsilon)/epsilon)))/(((gamma**(1/epsilon))+
+    output = (X/A)*(((gamma**(1/epsilon))+
               (((1-gamma)**(1/epsilon))*(((r+delta)/w)**(epsilon-1))*
-              (((1-gamma)/gamma)**((epsilon-1)/epsilon))))**(epsilon/(epsilon-1)))
+              (((1-gamma)/gamma)**((epsilon-1)/epsilon))))**(epsilon/(1-epsilon)))
 
     return output
 
@@ -441,14 +441,14 @@ def Steady_State(guesses):
     X2 = x_sol[1]
 
     #### Need to solve for labor and capital demand from each industry
-    K1_d = get_k_demand(w, r, X1)
-    L1_d = get_l_demand(w, r, K1_d)
-    K2_d = get_k_demand(w, r, X2)
-    L2_d = get_l_demand(w, r, K2_d)
-    #K1_d = (X1/(X1+X2))*K_s
-    #L1_d = (X1/(X1+X2))*L_s
-    #K2_d = (X2/(X1+X2))*K_s
-    #L2_d = (X2/(X1+X2))*L_s
+    #K1_d = get_k_demand(w, r, X1)
+    #L1_d = get_l_demand(w, r, K1_d)
+    #K2_d = get_k_demand(w, r, X2)
+    #L2_d = get_l_demand(w, r, K2_d)
+    K1_d = (X1/(X1+X2))*K_s
+    L1_d = (X1/(X1+X2))*L_s
+    K2_d = (X2/(X1+X2))*K_s
+    L2_d = (X2/(X1+X2))*L_s
     #K2_d = K_s -K1_d
     #L2_d = L_s -L1_d
     #print 'capital demands: ', K1_d, get_k_demand(w, r, X1)
@@ -460,13 +460,14 @@ def Steady_State(guesses):
     #error1 = K_s - K_d
     #error2 = L_s - L_d
 
-    r_new = get_r(X1, K1_d)
-    w_new = get_w(X1, L1_d)
+    r_new = get_r(X1, K1_d, p_c1)
+    w_new = get_w(X1, L1_d, p_c1)
     #print 'r1, r2, r', get_r(X1, K1_d), get_r(X2, K2_d), r
     print 'k1 three ways: ', K1_d, (X1/(X1+X2))*(K1_d+K2_d), (X1/(X1+X2))*(K_s) 
     #print 'r diffs', get_r(X1, K1_d)-get_r(X2, K2_d), get_r(X1, K1_d)-r
 
     print 'market clearing: ', K1_d+K2_d-K_s, L1_d+L2_d-L_s 
+    print 'market clearing 2: ', get_k_demand(w, r, X1)+get_k_demand(w, r, X2)-K_s, get_l_demand(w, r, get_k_demand(w, r, X1))+get_l_demand(w, r, get_k_demand(w, r, X2))-L_s 
     print 'resource constraint: ', X1-C1-(delta*xi[0,0]*K1_d)-(delta*xi[1,0]*K2_d), X2-C2-(delta*xi[0,1]*K1_d)-(delta*xi[1,1]*K2_d) 
 
     error1 = r_new - r
@@ -495,8 +496,8 @@ def Steady_State(guesses):
 # Make initial guesses for factor prices
 #r_guess_init = 0.685814383743 
 #w_guess_init = 1.10140534876
-r_guess_init = 0.44 
-w_guess_init = 1.0
+r_guess_init = 0.74 
+w_guess_init = 1.03
 guesses = [r_guess_init, w_guess_init]
 
 # Solve SS

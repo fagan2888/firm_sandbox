@@ -116,25 +116,25 @@ def get_X(K, L):
     return X
 
 
-def get_w(X, L):
+def get_w(X, L, p_c):
     '''
     Parameters: Aggregate output, Aggregate labor
 
     Returns:    Returns to labor
     '''
     #w = (1 - alpha) * X / L
-    w = (A**((epsilon-1)/epsilon))*((((1-gamma)*X)/L)**(1/epsilon)) 
+    w = p_c*((A**((epsilon-1)/epsilon))*((((1-gamma)*X)/L)**(1/epsilon)))
     return w
 
 
-def get_r(X, K):
+def get_r(X, K, p_c):
     '''
     Parameters: Aggregate output, Aggregate capital
 
     Returns:    Returns to capital
     '''
     #r = (alpha * (X / K)) - delta
-    r = (A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon)) - delta
+    r = p_c*((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon))) - delta
     return r
 
 
@@ -445,7 +445,7 @@ def Steady_State(guesses):
     K2_d = get_k_demand(w, r, X2)
     L2_d = get_l_demand(w, r, K2_d)
 
-    #print 'r diffs', r-get_r(X1,K1_d), r-get_r(X2,K2_d)
+    #print 'r diffs', r-get_r(X1,K1_d, p_c1), r-get_r(X2,K2_d, p_c2)
 
     # Check labor and capital market clearing conditions
     K_d = K1_d + K2_d 
@@ -566,6 +566,7 @@ I2ss = delta*get_k_demand(wss,rss,X2_ss)
 #print 'X1 check: ', X1_ss, X1ss_check
 #print 'X2 check: ', X2_ss, X2ss_check
 
+print 'diff btwn r_ss and implied r_ss: ', rss-get_r(X1_ss, K1_d_ss, p_c1_ss)
 
 print 'RESOURCE CONSTRAINT DIFFERENCE:'
 print 'RC1: ', X1_ss - Y1ss
