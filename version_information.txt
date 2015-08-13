@@ -8,18 +8,19 @@ Version 1:
 
 Adding two firms:
 - 2.0: Extension of 1.1 to have CES production.  Works, but solution sensitive to guesses of K,L for inner fsolve of hh problem.
-- 2.1 Extension of 2.0 Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output.  Trying to solve by having diff btwn r and r_new, w and w_new be zero.  Solves for SS, clearing RC and small euler errors, BUT gives different answer than 2.1_mktclear below (though in the ball park) AND markets not clearing.  Also, still not seeming robust to changes in alpha. (works with alpha=1, 0.9, but not alpha = 0.5) ** Note typed over some code and not running, but could fix.
+- 2.1 Extension of 2.0 Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output.  Trying to solve by having diff btwn r and r_new, w and w_new be zero.  Works.
 - 2.1_financial_intermediary : trying to make explicitly the assumption that there is a financial intermediary that can take household savings and costlessly convert it into capital that can be used by either firm.  Here, the code for the production of the industry is changed so that firms produce only consumption good and hh savings + fin intermediary determine the amount of capital for production.  I have the same issues as with the 2.1 (not market clear) in that even if interest rates converge, markets don't clear.
 - 2.1_mktclear: Extension of 2.0 to have 2 firms, cbar = 0, fixed coeff matrix for input and output - use market clearing condition rather than update of interest rates in outer loop.  Got to work with alpha=1, 0.9, 0.91 -  but not with 0.1, 0.2. 0.3, 0.4, 0.5, 0.8, 0.85, 0.88, 0.89, 0.899, 0.92.  Trouble with other alphas - guessing due to initial guesses of r, w - how get this to be more robust?	If I choose an r>0.75 then pretty robust to different values of alpha.
-- 2.2: Extension of 2.1 to have 2 firms, cbar != 0.  Got this working in 2.1_mktclear
-- 2.3 Extend 2.2 to have fixed coeff matrix mapping outputs to cons goods.  Works - market clearing version.
-- 2.4: change sol'n method in how r and w updated (try to do what attempting in 1.2)
-- 2.5: increase number of industries and consumption goods to general numbers.  Works and produces same solution as 2.1 given same parameter values
+- 2.2_mktclear: Extension of 2.1 to have 2 firms, cbar != 0.  Got this working in 2.1_mktclear so this file does not exist.
+- 2.3_mktclear Extend 2.2 to have fixed coeff matrix mapping outputs to cons goods.  Works - market clearing version.
+- 2.4_mktclear: change sol'n method in how r and w updated (try to do what attempting in 1.2)
+- 2.5_mktclear: increase number of industries and consumption goods to general numbers.  Works and produces same solution as 2.1 given same parameter values
+- 2.5_: 2.5_mktclear but with alternative solution that does not rely on market clearing conditions to converge.  Works and produces same solution as 2.5_mktclear given same parameter values.
 
 
 Adding dynamic firms:
-- 3.0: Extend 2.1_mktclear to have dynamic firms.  Test with two firms first.  Asset and labor market clearing.  Works.
-- 3.1: Extend 3.0 to have M firms (so similar to 2.5, but with dynamic firms).  Works.
+- 3.0_mktclear: Extend 2.1_mktclear to have dynamic firms.  Test with two firms first.  Asset and labor market clearing.  Works.
+- 3.1_mktclear: Extend 3.0 to have M firms (so similar to 2.5, but with dynamic firms).  Works.
 - 3.1_mktclear_load_params: Extend 3.1 to import params from Fullerton Rogers for I=17, M=19.  Works. Note that need to adjust starting value for interest rate downwards as number of periods of economic life of agents increases.  Success with S=5 to S=17.
 
 
