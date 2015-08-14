@@ -429,6 +429,38 @@ def solve_hh(guesses, r, w, p_c, p_tilde, j):
     #print(max(list(error1.flatten()) + list(error2.flatten()) + list(error3.flatten())))
     return list(error1.flatten()) + list(error2.flatten()) + list(error3.flatten()) 
 
+def solve_k(guesses, p, p_k, K_s, X):
+    K = guesses
+    numerator = ((p/p_k)*((gamma*(X/K))**(1/epsilon))*(A**((epsilon-1)/1))-delta)[0]
+    x_func = p_k*gamma*X*(((p_k/p)*(numerator+delta)*(A**((1-epsilon)/1)))**(-1*epsilon))
+    
+    error = p_k*K-K_s+x_func.sum()-x_func
+
+    # Check and punish constraing violations
+    mask1 = K <= 0
+
+    error[mask1] = 1e14
+
+    #print 'solve k error: ', error
+    #print 'k_m guess: ', K
+    return error 
+
+def solve_l(guesses, p, L_s, X):
+    L = guesses
+    numerator = (p*(((1-gamma)*(X/L))**(1/epsilon))*(A**(epsilon-1)))[0]
+    x_func = (1-gamma)*X*(((numerator/p)*(A**((1-epsilon)/1)))**(-1*epsilon))
+    
+    error = L-L_s+x_func.sum()-x_func
+
+    # Check and punish constraing violations
+    mask1 = L <= 0
+
+    error[mask1] = 1e14
+
+    #print 'solve l error: ', error
+    #print 'L_m guess: ', L
+    return error 
+
 
 def solve_output(guesses,p_k,w,r,X_c):
     X = guesses
@@ -437,7 +469,8 @@ def solve_output(guesses,p_k,w,r,X_c):
 
     return errors
 
-def Steady_State(guesses, mu):
+#def Steady_State(guesses, mu):
+def Steady_State(guesses):
     '''
     Parameters: Steady state distribution of capital guess as array
                 size SxJ and labor supply array of SxJ rss
@@ -467,100 +500,122 @@ def Steady_State(guesses, mu):
     n = np.zeros((S,J)) # initialize n matrix
     c = np.zeros((S, J))
     
-    while (dist > mindist_SS) and (iteration < maxiter):
+    #while (dist > mindist_SS) and (iteration < maxiter):
 
 
         #print 'prices ', p, p_c, p_k, p_tilde
 
-        # solve hh problem for consumption, labor supply, and savings
-        for j in xrange(J):
-            if j == 0:
-                guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
-            else:
-                guesses = np.append(k[:,(j-1)], n[:,(j-1)])
-            solutions = opt.fsolve(solve_hh, guesses, args=(r, w, p_c, p_tilde, j), xtol=1e-9, col_deriv=1)
-            #out = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1, full_output=1)
-            #print'solution found flag', out[2], out[3]
-            #solutions = out[0]
-            k[:,j] = solutions[:S].reshape(S)
-            n[:,j] = solutions[S:].reshape(S)
-            BQ = get_BQ(r, k[:,j].reshape(S,1), j)
-            bq = get_dist_bq(BQ, j).reshape(S,1)
-            c[:,j] = get_cons(w, r, n[:,j].reshape(S,1), k[:,j].reshape(S,1), bq, p_c, p_tilde, j).reshape(S)
+    # solve hh problem for consumption, labor supply, and savings
+    for j in xrange(J):
+        if j == 0:
+            guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
+        else:
+            guesses = np.append(k[:,(j-1)], n[:,(j-1)])
+        solutions = opt.fsolve(solve_hh, guesses, args=(r, w, p_c, p_tilde, j), xtol=1e-9, col_deriv=1)
+        #out = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1, full_output=1)
+        #print'solution found flag', out[2], out[3]
+        #solutions = out[0]
+        k[:,j] = solutions[:S].reshape(S)
+        n[:,j] = solutions[S:].reshape(S)
+        BQ = get_BQ(r, k[:,j].reshape(S,1), j)
+        bq = get_dist_bq(BQ, j).reshape(S,1)
+        c[:,j] = get_cons(w, r, n[:,j].reshape(S,1), k[:,j].reshape(S,1), bq, p_c, p_tilde, j).reshape(S)
 
-        c_i = ((p_tilde*np.tile(c,(I,1,1))*np.tile(np.reshape(alpha,(I,1,1)),(1,S,J)))/np.tile(np.reshape(p_c,(I,1,1)),(1,S,J)) 
-                + np.tile(np.reshape(cbar,(I,1,1)),(1,S,J)))
-        #print 'c_i', c_i
+    c_i = ((p_tilde*np.tile(c,(I,1,1))*np.tile(np.reshape(alpha,(I,1,1)),(1,S,J)))/np.tile(np.reshape(p_c,(I,1,1)),(1,S,J)) 
+            + np.tile(np.reshape(cbar,(I,1,1)),(1,S,J)))
+    #print 'c_i', c_i
 
-        # Find total consumption of each good
-        C = get_C(c_i)
-        #print 'total cons by good: ', C
+    # Find total consumption of each good
+    C = get_C(c_i)
+    #print 'total cons by good: ', C
 
-        # Find total demand for output from each sector from consumption
-        X_c = np.dot(np.reshape(C,(1,I)),pi)
-        guesses = X_c/I
-        x_sol = opt.fsolve(solve_output, guesses, args=(p_k, w, r, X_c), xtol=1e-9, col_deriv=1)
+    # Find total demand for output from each sector from consumption
+    X_c = np.dot(np.reshape(C,(1,I)),pi)
+    guesses = X_c/I
+    x_sol = opt.fsolve(solve_output, guesses, args=(p_k, w, r, X_c), xtol=1e-9, col_deriv=1)
 
-        X = x_sol
+    X = x_sol
 
-        # find aggregate savings and labor supply
-        K_s, K_constr = get_K(k)
-        L_s = get_L(n)
-
-
-        #### Need to solve for labor and capital demand from each industry
-        K_d = get_k_demand(p_k, w, r, X)
-        L_d = get_l_demand(p_k, w, r, K_d)
+    # find aggregate savings and labor supply
+    K_s, K_constr = get_K(k)
+    L_s = get_L(n)
 
 
-        # Find value of each firm V = DIV/r in SS
-        #V = (p*X - w*L_d - p_k*delta*K_d)/r
+    # Find factor demand from each industry as a function of factor supply
+    k_m_guesses = (X/X.sum())*K_s
+    l_m_guesses = (X/X.sum())*L_s
+    K_d = opt.fsolve(solve_k, k_m_guesses, args=(p, p_k, K_s, X), xtol=1e-9, col_deriv=1)
+    L_d = opt.fsolve(solve_l, l_m_guesses, args=(p, L_s, X), xtol=1e-9, col_deriv=1)
 
-        # Find implied r, w
-        r_new = get_r(X,K_d,p_k,p)[0]
-        #r_new = (p*X - w*L_d - p_k*delta*K_d).sum()/K_s
-        w_new = get_w(X, L_d, p)[0]
-        #r_new = (p*X - w*L_d - p_k*delta*K_d).sum()/K_s
-        #w_new = get_w(X, L_s, p)[0]
+
+    #### Need to solve for labor and capital demand from each industry
+    K_d_check = get_k_demand(p_k, w, r, X)
+    L_d_check = get_l_demand(p_k, w, r, K_d)
+
+
+    # Find value of each firm V = DIV/r in SS
+    V = (p*X - w*L_d - p_k*delta*K_d)/r
+
+    # Find implied r, w
+    r_new = get_r(X,K_d,p_k,p)[0]
+    #r_new = (p*X - w*L_d - p_k*delta*K_d).sum()/K_s
+    w_new = get_w(X, L_d, p)[0]
+    #r_new = (p*X - w*L_d - p_k*delta*K_d).sum()/K_s
+    #w_new = get_w(X, L_s, p)[0]
+    
+    print 'checking r', get_r(X,K_d,p_k,p)-get_r(X,K_d_check,p_k,p)
+
+    print 'checking asset market', K_s - V.sum()
+    print 'checking labor market', L_s - L_d.sum()
+    # Check labor and asset market clearing conditions
+    #error1 = K_s - V.sum()
+    #error2 = L_s - L_d.sum()
+    error1 = r_new - r
+    error2 = w_new - w
+
+    print 'r diff: ', error1
+    print 'w diff: ', error2
+
+    #print 'asset market diff: ', error1
+    #print 'labor market diff: ', error2
+    print 'r, w: ', r, w
+
+
+    # Check and punish violations
+    if r <= 0:
+        error1 += 1e9
+    if r > 1:
+        error1 += 1e9
+    if w <= 0:
+        error2 += 1e9
+
+    return [error1, error2]
+
+
+    #     r = mu*r_new + (1-mu)*r # so if r low, get low save, so low capital stock, so high mpk, so r_new bigger
+    #     w = mu*w_new + (1-mu)*w
+
+    #     dist = np.array([perc_dif_func(r_new, r)]+[perc_dif_func(w_new, w)]).max()
         
-
-        # Check labor and asset market clearing conditions
-        #error1 = K_s - V.sum()
-        #error2 = L_s - L_d.sum()
-        error1 = r_new - r
-        error2 = w_new - w
-
-        print 'r diff: ', error1
-        print 'w diff: ', error2
-
-        #print 'asset market diff: ', error1
-        #print 'labor market diff: ', error2
-        print 'r, w: ', r, w
-
-        r = mu*r_new + (1-mu)*r # so if r low, get low save, so low capital stock, so high mpk, so r_new bigger
-        w = mu*w_new + (1-mu)*w
-
-        dist = np.array([perc_dif_func(r_new, r)]+[perc_dif_func(w_new, w)]).max()
-        
-        dist_vec[iteration] = dist
-        if iteration > 10:
-            if dist_vec[iteration] - dist_vec[iteration-1] > 0:
-                mu /= 2.0
-                print 'New value of mu:', mu
-        iteration += 1
-        print "Iteration: %02d" % iteration, " Distance: ", dist
+    #     dist_vec[iteration] = dist
+    #     if iteration > 10:
+    #         if dist_vec[iteration] - dist_vec[iteration-1] > 0:
+    #             mu /= 2.0
+    #             print 'New value of mu:', mu
+    #     iteration += 1
+    #     print "Iteration: %02d" % iteration, " Distance: ", dist
 
  
-    return [r, w]
+    # return [r, w]
     
 
 # Solve SS
-r_guess_init = 0.77
-w_guess_init = 1.03 
+r_guess_init = 0.726912203612#0.77
+w_guess_init = 0.972363084349#1.03 
 guesses = [r_guess_init, w_guess_init]
-#solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
+solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
 #solutions = Steady_State(guesses)
-solutions = Steady_State(guesses, mu)
+#solutions = Steady_State(guesses, mu)
 rss = solutions[0]
 wss = solutions[1]
 print 'ss r, w: ', rss, wss
