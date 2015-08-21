@@ -63,7 +63,7 @@ TPImindist   = Cut-off distance between iterations for TPI
 '''
 
 #computational parameters
-maxiter = 1000
+maxiter = 10
 mindist_SS = 1e-9
 mu = 0.005
 
@@ -460,6 +460,10 @@ def Steady_State(guesses, mu):
     
     mu_r = mu
     mu_w = mu
+    r_flag = 0 
+    w_flag = 0
+    r_change = 0.5 
+    w_change = 0.5
 
     dist = 10
     dist_r = dist
@@ -522,15 +526,16 @@ def Steady_State(guesses, mu):
         # Find factor demand from each industry as a function of factor supply
         #K_d = K_s - get_sum_Xk(r,p,X)
         #L_d = L_s - get_sum_Xl(w,p,X)
-        k_m_guesses = (X/X.sum())*K_s
-        l_m_guesses = (X/X.sum())*L_s
-        K_d = opt.fsolve(solve_k, k_m_guesses, args=(p, K_s, X), xtol=1e-9, col_deriv=1)
-        L_d = opt.fsolve(solve_l, l_m_guesses, args=(p, L_s, X), xtol=1e-9, col_deriv=1)
+        #k_m_guesses = (X/X.sum())*K_s
+        #l_m_guesses = (X/X.sum())*L_s
+        #K_d = opt.fsolve(solve_k, k_m_guesses, args=(p, K_s, X), xtol=1e-9, col_deriv=1)
+        #L_d = opt.fsolve(solve_l, l_m_guesses, args=(p, L_s, X), xtol=1e-9, col_deriv=1)
 
 
         #### Need to solve for labor and capital demand from each industry
-        K_d_check = get_k_demand(w, r, X)
-        L_d_check = get_l_demand(w, r, K_d_check)
+        K_d = get_k_demand(w, r, X)
+        #L_d = get_l_demand(w, r, K_d)
+        L_d = ((1-gamma)*X)*((w/p)**(-1*epsilon))*(A**(epsilon-1))
 
         ## Solve for factor demands in a third way
         #r_vec = np.array([r, r, r])
@@ -555,44 +560,100 @@ def Steady_State(guesses, mu):
         #print 'market clearing 2: ', K_s - K_d_check.sum(), L_s - L_d_check.sum()
 
         # Check labor and capital market clearing conditions
-        #error1 = K_s - K_d.sum()
+        error1 = K_d.sum()- K_s  
+        error2 = L_d.sum() - L_s
         #error2 = L_s - L_d.sum()
-        error1 = r_new - r
-        error2 = w_new - w
-        #print 'errors: ', error1, error2
-        print 'r, w: ', r,w
-        print 'r_new, w_new: ', r_new,w_new
 
-        r = mu_r*r_new + (1-mu_r)*r # so if r low, get low save, so low capital stock, so high mpk, so r_new bigger
-        w = mu_w*w_new + (1-mu_w)*w
 
-        dist = np.array([perc_dif_func(r_new, r)]+[perc_dif_func(w_new, w)]).max()
+        #error1 = r_new - r
+        #error2 = w_new - w
+        print 'capital market clearing diff: ', error1
+        print 'labor market clearing diff: ', error2
         
-        dist_r = perc_dif_func(r_new, r)
-        dist_w = perc_dif_func(w_new, w)
+        dist_r_vec[iteration] = error1
+        dist_w_vec[iteration] = error2
 
-        dist_r_vec[iteration] = dist_r
-        dist_w_vec[iteration] = dist_w
+        # Bisection method to find w
+        if iteration == 0:
+            w0 = w 
+            if dist_w_vec[iteration] > 0: 
+                w = w0 + w_change
+            elif dist_w_vec[iteration] < 0: 
+                w = max(0.00001, (w0 - w_change)) 
+        elif iteration >= 1:
+            if w_flag == 0: 
+                if dist_w_vec[iteration] < 0 and dist_w_vec[iteration-1] > 0:
+                    w_flag = 1
+                    wup = w
+                    wdown = w0
+                    w = (wup+wdown)/2
+                elif dist_w_vec[iteration] > 0 and dist_w_vec[iteration-1] < 0:
+                    w_flag = 1
+                    wdown = w
+                    wup = w0
+                    w = (wup+wdown)/2
+                elif dist_w_vec[iteration] > 0 and dist_w_vec[iteration] > 0:
+                    w0 = w
+                    w = w0 + w_change
+                elif dist_w_vec[iteration] < 0 and dist_w_vec[iteration] < 0: 
+                    w0 = w
+                    w = max(0.00001, (w0 - w_change))
+            elif w_flag == 1:
+                if dist_w_vec[iteration] > 0:
+                    wup = wup
+                    wdown = w
+                    w = (wup+wdown)/2
+                elif dist_w_vec[iteration] <0: 
+                    wdown = wdown
+                    wup = w
+                    w = (wup+wdown)/2
 
-        dist_vec[iteration] = dist
 
-        print 'difference between consec distances: ', dist_vec[iteration] - dist_vec[iteration-1]
-        print 'distances: ', dist_vec[iteration], dist_vec[iteration-1], dist
-        print 'mu: ', mu
+        # Bisection method to find r
+        if iteration == 0:
+            r0 = r 
+            if dist_r_vec[iteration] > 0: 
+                r = r0 + r_change
+            elif dist_r_vec[iteration] < 0: 
+                r = max(0.00001, (r0 - r_change)) 
+        elif iteration >= 1:
+            if r_flag == 0: 
+                if dist_r_vec[iteration] < 0 and dist_r_vec[iteration-1] > 0:
+                    r_flag = 1
+                    rup = r
+                    rdown = r0
+                    r = (rup+rdown)/2
+                elif dist_r_vec[iteration] > 0 and dist_r_vec[iteration-1] < 0:
+                    r_flag = 1
+                    rdown = r
+                    rup = r0
+                    r = (rup+rdown)/2
+                elif dist_r_vec[iteration] > 0 and dist_r_vec[iteration] > 0:
+                    r0 = r
+                    r = r0 + r_change
+                elif dist_r_vec[iteration] < 0 and dist_r_vec[iteration] < 0: 
+                    r0 = r
+                    r = max(0.00001, (r0 - r_change))
+            elif r_flag == 1:
+                if dist_r_vec[iteration] > 0:
+                    rup = rup
+                    rdown = r
+                    r = (rup+rdown)/2
+                elif dist_r_vec[iteration] <0: 
+                    rdown = rdown
+                    rup = r
+                    r = (rup+rdown)/2
 
-        #if iteration > 10:
-            #if dist_vec[iteration] - dist_vec[iteration-1] > 0:
-            #    mu /= 2.0
-            #    print 'New value of mu:', mu
-            #if dist_r_vec[iteration] - dist_r_vec[iteration-1] > 0:
-            #    mu_r /= 2.0
-            #    print 'New value of mu_r:', mu_r
-            #if dist_w_vec[iteration] - dist_w_vec[iteration-1] > 0:
-            #    mu_w /= 2.0
-            #    print 'New value of mu_w:', mu_w
-            #if np.absolute(dist_vec[iteration] - dist_vec[iteration-1]) < 1e-8:
-            #     mu = 0.8
-            #     print 'Was stuck in a cycle at iteration', iteration
+
+
+
+        #print 'errors: ', error1, error2
+        print 'r, w: ', r0,w0
+        print 'r_new, w_new: ', r,w
+
+
+        dist = np.absolute(np.array([error1,error2])).max()
+        
         iteration += 1
         print "Iteration: %02d" % iteration, " Distance: ", dist
 
@@ -602,8 +663,8 @@ def Steady_State(guesses, mu):
     
 
 # Solve SS
-r_guess_init = 0.77
-w_guess_init = 1.03 
+r_guess_init = 0.99 # start w really high initial guesses for bisection method
+w_guess_init = 2.0  
 guesses = [r_guess_init, w_guess_init]
 solutions = Steady_State(guesses,mu)
 rss = solutions[0]

@@ -65,7 +65,7 @@ TPImindist   = Cut-off distance between iterations for TPI
 #computational parameters
 maxiter = 1000
 mindist_SS = 1e-9
-mu = 0.005
+mu = 0.01
 
 
 
@@ -150,6 +150,7 @@ def get_w(X, L, p):
     '''
     #w = (1 - alpha) * X / L
     w = p*((A**((epsilon-1)/epsilon))*((((1-gamma)*X)/L)**(1/epsilon))) 
+
     return w
 
 
@@ -458,16 +459,10 @@ def Steady_State(guesses, mu):
     r = guesses[0]
     w = guesses[1]
     
-    mu_r = mu
-    mu_w = mu
 
     dist = 10
-    dist_r = dist
-    dist_w = dist
     iteration = 0
     dist_vec = np.zeros(maxiter)
-    dist_r_vec = np.zeros(maxiter)
-    dist_w_vec = np.zeros(maxiter)
     
     # find prices of consumption goods
     p = get_p(r,w)
@@ -522,15 +517,15 @@ def Steady_State(guesses, mu):
         # Find factor demand from each industry as a function of factor supply
         #K_d = K_s - get_sum_Xk(r,p,X)
         #L_d = L_s - get_sum_Xl(w,p,X)
-        k_m_guesses = (X/X.sum())*K_s
-        l_m_guesses = (X/X.sum())*L_s
-        K_d = opt.fsolve(solve_k, k_m_guesses, args=(p, K_s, X), xtol=1e-9, col_deriv=1)
-        L_d = opt.fsolve(solve_l, l_m_guesses, args=(p, L_s, X), xtol=1e-9, col_deriv=1)
+        #k_m_guesses = (X/X.sum())*K_s
+        #l_m_guesses = (X/X.sum())*L_s
+        #K_d = opt.fsolve(solve_k, k_m_guesses, args=(p, K_s, X), xtol=1e-9, col_deriv=1)
+        #L_d = opt.fsolve(solve_l, l_m_guesses, args=(p, L_s, X), xtol=1e-9, col_deriv=1)
 
 
         #### Need to solve for labor and capital demand from each industry
-        K_d_check = get_k_demand(w, r, X)
-        L_d_check = get_l_demand(w, r, K_d_check)
+        K_d = get_k_demand(w, r, X)
+        L_d = get_l_demand(w, r, K_d)
 
         ## Solve for factor demands in a third way
         #r_vec = np.array([r, r, r])
@@ -538,8 +533,14 @@ def Steady_State(guesses, mu):
         #print ' three k diffs: ', K_d-K_d_3, K_d-K_d_check, K_d_3-K_d_check
 
         # get implied factor prices
-        r_new = get_r(X, K_d, p)[0]
-        w_new = get_w(X, L_d, p)[0]
+        K_d_0 = max(K_s-K_d[1:].sum(),1e-1)
+        L_d_0 = max(L_s-L_d[1:].sum(),1e-1)
+        print 'K_d_0, L_d_0: ', K_d_0, L_d_0
+        print 'K_s, L_s: ' , K_s, L_s
+        print 'K_d: ', K_d 
+        print 'L_d: ', L_d
+        w_new = p[0]*((A**((epsilon[0]-1)/epsilon[0]))*((((1-gamma[0])*X[0])/L_d_0)**(1/epsilon[0]))) 
+        r_new = p[0]*((A**((epsilon[0]-1)/epsilon[0]))*(((gamma[0]*X[0])/K_d_0)**(1/epsilon[0]))) - delta[0]
         #print 'all r_new values: ', get_r(X, K_d, p)
         #print 'all alt r_new values: ', get_r(X,K_d_check,p)
         #print 'alt r values: ', get_r(X,K_d_check,p)
@@ -563,39 +564,19 @@ def Steady_State(guesses, mu):
         print 'r, w: ', r,w
         print 'r_new, w_new: ', r_new,w_new
 
-        r = mu_r*r_new + (1-mu_r)*r # so if r low, get low save, so low capital stock, so high mpk, so r_new bigger
-        w = mu_w*w_new + (1-mu_w)*w
+        r = mu*r_new + (1-mu)*r # so if r low, get low save, so low capital stock, so high mpk, so r_new bigger
+        w = mu*w_new + (1-mu)*w
 
-        dist = np.array([perc_dif_func(r_new, r)]+[perc_dif_func(w_new, w)]).max()
+        #dist = np.array([perc_dif_func(r_new, r)]+[perc_dif_func(w_new, w)]).max()
+        dist = np.absolute([r_new-r,w_new-w]).max()
         
-        dist_r = perc_dif_func(r_new, r)
-        dist_w = perc_dif_func(w_new, w)
-
-        dist_r_vec[iteration] = dist_r
-        dist_w_vec[iteration] = dist_w
-
         dist_vec[iteration] = dist
-
-        print 'difference between consec distances: ', dist_vec[iteration] - dist_vec[iteration-1]
-        print 'distances: ', dist_vec[iteration], dist_vec[iteration-1], dist
-        print 'mu: ', mu
-
-        #if iteration > 10:
-            #if dist_vec[iteration] - dist_vec[iteration-1] > 0:
-            #    mu /= 2.0
-            #    print 'New value of mu:', mu
-            #if dist_r_vec[iteration] - dist_r_vec[iteration-1] > 0:
-            #    mu_r /= 2.0
-            #    print 'New value of mu_r:', mu_r
-            #if dist_w_vec[iteration] - dist_w_vec[iteration-1] > 0:
-            #    mu_w /= 2.0
-            #    print 'New value of mu_w:', mu_w
-            #if np.absolute(dist_vec[iteration] - dist_vec[iteration-1]) < 1e-8:
-            #     mu = 0.8
-            #     print 'Was stuck in a cycle at iteration', iteration
+        if iteration > 10:
+            if dist_vec[iteration] - dist_vec[iteration-1] > 0:
+                mu /= 2.0
+                print 'New value of mu:', mu
         iteration += 1
         print "Iteration: %02d" % iteration, " Distance: ", dist
-
 
  
     return [r, w]
@@ -603,7 +584,7 @@ def Steady_State(guesses, mu):
 
 # Solve SS
 r_guess_init = 0.77
-w_guess_init = 1.03 
+w_guess_init = 1.03
 guesses = [r_guess_init, w_guess_init]
 solutions = Steady_State(guesses,mu)
 rss = solutions[0]

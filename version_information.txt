@@ -23,7 +23,7 @@ Adding dynamic firms:
 - 3.1_mktclear: Extend 3.0 to have M firms (so similar to 2.5, but with dynamic firms).  Works.
 - 3.1: is 3.1_mktclear with the alt sol'n that doesn't rely on market clearing.  Seems to work, but for same initial guess, gives diff eq'm r,w than 3.1_mktclear.  This seems like a problem, but if use sol'n to 3.1_mktclear as originial guess, that is sol'n here (and vice versa - if use 3.1 sol'n for guess in 3.1_mktclear then that is the solution there).
 - 3.1_mktclear_load_params: Extend 3.1 to import params from Fullerton Rogers for I=17, M=19.  Works. Note that need to adjust starting value for interest rate downwards as number of periods of economic life of agents increases.  Success with S=5 to S=17.
-
+- 3.2_mktclear: dynamic firms with capital gains, dividend, and corporate income tax.  Adds gov't transfers (which are needed in "outer" GE loop of problem).
 
 Transition path:
 - TPI_v3 = Extend 3.0 to solve SS and transition path
