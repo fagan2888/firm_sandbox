@@ -109,9 +109,9 @@ weights = omega*lambdas/((omega*lambdas).sum()) # weights - dividing so weights 
 
 
 # Tax parameters
-tau_b = np.ones(M)*0.25
-tau_d = np.ones(M)*0.15 # without adjustment costs, want div tax rate to exceed cap gains rate
-tau_g = np.ones(M)*0.12 
+tau_b = np.ones(M)*0.0 #0.25
+tau_d = np.ones(M)*0.0 #0.15 # without adjustment costs, want div tax rate to exceed cap gains rate
+tau_g = np.ones(M)*0.0 #0.12 
 delta_tau = delta*1.2 # for not just make tax depreciation rate some scaled version of the rate of physical depreciation
 
 # Functions and Definitions
@@ -145,16 +145,33 @@ def get_w(X, L, p):
     return w
 
 
-def get_r(X, K, p_k, p):
-    '''
-    Parameters: Aggregate output, Aggregate capital
+# def get_r(X, K, p_k, p):
+#     '''
+#     Parameters: Aggregate output, Aggregate capital
 
-    Returns:    Returns to capital
-    '''
-    #r = (alpha * (X / K)) - delta
-    r = ((p/p_k)*((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon)))*((1-((1-delta_tau)/(1-tau_g))*tau_b*delta_tau)**(-1.0)) - delta)
+#     Returns:    Returns to capital
+#     '''
+#     #r = (alpha * (X / K)) - delta
+#     r = ((p/p_k)*((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon)))*((1-((1-delta_tau)/(1-tau_g))*tau_b*delta_tau)**(-1.0)) - delta)*(1-tau_g)
 
-    return r
+#     return r
+
+
+def solve_r(guess, K, X, p, p_k):
+    '''
+    This function solves for r - which is only defined implicitly in the dynamic firm problem with taxes
+    '''
+
+    r = guess 
+    MPK = ((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon)))
+
+    error = ((1-tau_b)*(p/p_k)*MPK)-delta - (r/(1-tau_g)) + (1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta)/((r/(1-tau_g))+delta))
+
+
+    #print ' print r solve for and error: ', r, error[0]
+    #print ' all r errors: ', error
+
+    return error[0]
 
 
 def get_L(n):
@@ -189,6 +206,8 @@ def get_C(c_i):
 
     return C
 
+
+
 def get_p(guesses, r, w):
     '''
     Generates price of producer output
@@ -200,13 +219,13 @@ def get_p(guesses, r, w):
 
     p_k = np.dot(xi,p)
 
-    k_over_x_vec = k_over_x(p_k,p,r)
-    l_over_x_vec = l_over_x(p,w)
+    q = p_k*(((1-tau_d)/(1-tau_g))*(1-((1-delta_tau)*tau_b*delta_tau*((r+delta_tau)**(-1.0)))))
+
+    k_over_x = get_k_over_x(p_k,p,r)
+    l_over_x = get_l_over_x(p,w)
 
     #error = p - (w*l_over_x_vec + p_k*(r+delta)*k_over_x_vec)
-    error = (p - (w*l_over_x_vec + ((p_k/(1-tau_g))*
-            (((r/(1-tau_g))*(1-(((1-delta_tau)/(1+(r/(1-tau_g))))*tau_b*delta_tau)))
-            +(1-(tau_b*(1-delta_tau)))*delta)*k_over_x_vec)))
+    error = (p - (w*l_over_x + ((r*q)/((1-tau_d)*(1-tau_b)))*k_over_x + (((1-(tau_b*(1-delta_tau)))*delta*p_k)/(1-tau_b))*k_over_x))
 
     mask = p < 0.0
 
@@ -215,18 +234,18 @@ def get_p(guesses, r, w):
     return error 
 
 
-def k_over_x(p_k, p, r):
+def get_k_over_x(p_k, p, r):
     '''
     Returns K/X for a firm
     Useful in determining price of output
     '''
 
     #k_over_x = gamma*(A**(epsilon-1))*(((p_k/p)*(r+delta))**(-1*epsilon))
-    k_over_x = gamma*(A**(epsilon-1))*(((p_k/p)*((r/(1-tau_g))+delta)*(1-(((1-delta_tau)/(1-tau_g))*tau_b*delta_tau)))**(-1*epsilon))
+    k_over_x = gamma*(A**(epsilon-1))*(((p_k/p)*((r/(1-tau_g))+delta)*(1-((1-delta_tau)*tau_b*delta_tau*((r/(1-tau_g))**(-1.0)))))**(-1*epsilon))
 
     return k_over_x
 
-def l_over_x(p, w):
+def get_l_over_x(p, w):
     '''
     Returns EL/X for a firm
     Useful in determining price of output
@@ -325,9 +344,14 @@ def get_k_demand(p_k,w,r,X):
     #          (((1-gamma)**(1/epsilon))*(((r+delta)*(p_k/w))**(epsilon-1))*
     #          (((1-gamma)/gamma)**((epsilon-1)/epsilon))))**(epsilon/(1-epsilon)))
 
+    #output = (X/A)*(((gamma**(1/epsilon))+
+    #          (((1-gamma)**(1/epsilon))*((p_k/w)**(epsilon-1))*((((r/(1-tau_g))+delta)*(1-(((1-delta_tau)/(1-tau_g))*tau_b*delta_tau)))**(epsilon-1))*
+    #          (((1-gamma)/gamma)**((epsilon-1)/epsilon))))**(epsilon/(1-epsilon)))
+
     output = (X/A)*(((gamma**(1/epsilon))+
-              (((1-gamma)**(1/epsilon))*((p_k/w)**(epsilon-1))*((((r/(1-tau_g))+delta)*(1-(((1-delta_tau)/(1-tau_g))*tau_b*delta_tau)))**(epsilon-1))*
-              (((1-gamma)/gamma)**((epsilon-1)/epsilon))))**(epsilon/(1-epsilon)))
+              (((1-gamma)**(1/epsilon))*((p_k/w)**(epsilon-1))*
+              (((1-gamma)/gamma)**((epsilon-1)/epsilon))*((((r/(1-tau_g))+delta)*
+              (1-((1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta_tau)**(-1.0)))))**(epsilon-1))))**(epsilon/(1-epsilon)))
 
     return output
 
@@ -339,7 +363,7 @@ def get_l_demand(p_k,w,r,K):
     Returns:    Demand for labor by the firm
     '''
     #output = K*((1-gamma)/gamma)*(((r+delta)*(p_k/w))**epsilon)
-    output = K*((1-gamma)/gamma)*((p_k/w)**epsilon)*((((r/(1-tau_g))+delta)*(1-(((1-delta_tau)/(1-tau_g))*tau_b*delta_tau)))**epsilon)
+    output = K*((1-gamma)/gamma)*((p_k/w)**epsilon)*((((r/(1-tau_g))+delta)*(1-((1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta_tau)**(-1.0)))))**epsilon)
 
     return output
 
@@ -432,6 +456,40 @@ def solve_hh(guesses, r, w, p_c, p_tilde, T_H, j):
     return list(error1.flatten()) + list(error2.flatten()) + list(error3.flatten()) 
 
 
+# def solve_k(guesses, p, p_k, K_s, X):
+#     K = guesses
+#     numerator = ((p/p_k)*((gamma*(X/K))**(1/epsilon))*(A**((epsilon-1)/1))-delta)[0]
+#     x_func = p_k*gamma*X*(((p_k/p)*(numerator+delta)*(A**((1-epsilon)/1)))**(-1*epsilon))
+    
+#     error = p_k*K-K_s+x_func.sum()-x_func
+
+#     # Check and punish constraing violations
+#     mask1 = K <= 0
+
+#     error[mask1] = 1e14
+
+#     #print 'solve k error: ', error
+#     #print 'k_m guess: ', K
+#     return error 
+
+# def solve_l(guesses, p, L_s, X):
+#     L = guesses
+#     numerator = (p*(((1-gamma)*(X/L))**(1/epsilon))*(A**(epsilon-1)))[0]
+#     x_func = (1-gamma)*X*(((numerator/p)*(A**((1-epsilon)/1)))**(-1*epsilon))
+    
+#     error = L-L_s+x_func.sum()-x_func
+
+#     # Check and punish constraing violations
+#     mask1 = L <= 0
+
+#     error[mask1] = 1e14
+
+#     #print 'solve l error: ', error
+#     #print 'L_m guess: ', L
+#     return error 
+
+
+
 def solve_output(guesses,p_k,w,r,X_c):
     X = guesses
     Inv = np.reshape(delta*get_k_demand(p_k,w,r,X),(1,M)) # investment demand - will differ not in SS
@@ -519,7 +577,16 @@ def Steady_State(guesses):
     V = ((1-tau_d)*DIV)/r
 
     # Checking that interest rates are common across firms
-    print 'interest rates by firm: ', get_r(X,K_d,p_k,p)
+    r_guess = r 
+    r_implied = opt.fsolve(solve_r, r_guess, args=(K_d, X, p, p_k), xtol=1e-9, col_deriv=1)
+    print 'interest rates by firm and r guessed: ', r_implied, r
+
+    # Alternative way to find factor demand from each industry as a function of factor supply
+    # k_m_guesses = (X/X.sum())*K_s
+    # l_m_guesses = (X/X.sum())*L_s
+    # K_d_check = opt.fsolve(solve_k, k_m_guesses, args=(p, p_k, K_s, X), xtol=1e-9, col_deriv=1)
+    # L_d_check = opt.fsolve(solve_l, l_m_guesses, args=(p, L_s, X), xtol=1e-9, col_deriv=1)
+
 
     # Check labor and asset market clearing conditions
     error1 = K_s - V.sum()
@@ -618,7 +685,9 @@ K_d_ss = get_k_demand(p_k_ss, wss, rss, X_ss)
 L_d_ss = get_l_demand(p_k_ss, wss, rss, K_d_ss)
 
 
-print 'r diffs', rss-get_r(X_ss,K_d_ss,p_k_ss,p_ss)
+r_guess = rss 
+r_implied_ss = r_implied = opt.fsolve(solve_r, r_guess, args=(K_d_ss, X_ss, p_ss, p_k_ss), xtol=1e-9, col_deriv=1)
+print 'r diffs', rss-r_implied_ss
 
 # Find value of each firm V = DIV/r in SS
 DIV_ss = ((1-tau_b)*(p_ss*X_ss - wss*L_d_ss) - ((1-(tau_b*(1-delta_tau)))*delta*p_k_ss*K_d_ss))
