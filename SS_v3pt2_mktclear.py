@@ -165,8 +165,9 @@ def solve_r(guess, K, X, p, p_k):
     r = guess 
     MPK = ((A**((epsilon-1)/epsilon))*(((gamma*X)/K)**(1/epsilon)))
 
-    error = ((1-tau_b)*(p/p_k)*MPK)-delta - (r/(1-tau_g)) + (1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta)/((r/(1-tau_g))+delta))
+    error = ((1-tau_b)*(p/p_k)*MPK)-delta - (r/(1-tau_g)) + (1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta)/((r/(1-tau_g))+delta_tau))
 
+    #print 'diff in r due to delta_tau: ', (((1-tau_b)*(p/p_k)*MPK)-delta - (r/(1-tau_g)) + (1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta)/((r/(1-tau_g))+delta_tau)))-(((1-tau_b)*(p/p_k)*MPK)-delta - (r/(1-tau_g)) + (1-delta)*tau_b*delta*(((r/(1-tau_g))+delta)/((r/(1-tau_g))+delta)))
 
     #print ' print r solve for and error: ', r, error[0]
     #print ' all r errors: ', error
@@ -227,6 +228,8 @@ def get_p(guesses, r, w):
     #error = p - (w*l_over_x_vec + p_k*(r+delta)*k_over_x_vec)
     error = (p - (w*l_over_x + ((r*q)/((1-tau_d)*(1-tau_b)))*k_over_x + (((1-(tau_b*(1-delta_tau)))*delta*p_k)/(1-tau_b))*k_over_x))
 
+    #print 'diff in q due to delta_tau: ', (p_k*(((1-tau_d)/(1-tau_g))*(1-((1-delta_tau)*tau_b*delta_tau*((r+delta_tau)**(-1.0))))))-(p_k*(((1-tau_d)/(1-tau_g))*(1-((1-delta)*tau_b*delta*((r+delta)**(-1.0))))))
+    #print 'diff in p due to delta_tau: ', ((p - (w*l_over_x + ((r*q)/((1-tau_d)*(1-tau_b)))*k_over_x + (((1-(tau_b*(1-delta_tau)))*delta*p_k)/(1-tau_b))*k_over_x)))-((p - (w*l_over_x + ((r*q)/((1-tau_d)*(1-tau_b)))*k_over_x + (((1-(tau_b*(1-delta)))*delta*p_k)/(1-tau_b))*k_over_x)))
     mask = p < 0.0
 
     error[mask] = 1e14
@@ -241,8 +244,9 @@ def get_k_over_x(p_k, p, r):
     '''
 
     #k_over_x = gamma*(A**(epsilon-1))*(((p_k/p)*(r+delta))**(-1*epsilon))
-    k_over_x = gamma*(A**(epsilon-1))*(((p_k/p)*((r/(1-tau_g))+delta)*(1-((1-delta_tau)*tau_b*delta_tau*((r/(1-tau_g))**(-1.0)))))**(-1*epsilon))
+    k_over_x = gamma*(A**(epsilon-1))*(((p_k/p)*((r/(1-tau_g))+delta)*(1-((1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta_tau)**(-1.0)))))**(-1*epsilon))
 
+    #print 'diff in k_over_x due to delta_tau: ', (gamma*(A**(epsilon-1))*(((p_k/p)*((r/(1-tau_g))+delta)*(1-((1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta_tau)**(-1.0)))))**(-1*epsilon)))-(gamma*(A**(epsilon-1))*(((p_k/p)*((r/(1-tau_g))+delta)*(1-((1-delta)*tau_b*delta*(((r/(1-tau_g))+delta)**(-1.0)))))**(-1*epsilon)))
     return k_over_x
 
 def get_l_over_x(p, w):
@@ -327,7 +331,11 @@ def get_cons(w, r, n, k, bq, p_c, p_tilde, T_H, j):
     k0 = np.zeros((S,1))
     k0[1:,0] = k[:-1,0] # capital start period with
 
-    output = (((1+r)*k0) + w*n*e[j] - k + bq + T_H - ((p_c*cbar).sum()))/p_tilde
+    output = (((1+((1-tau_d[0])*r))*k0) + w*n*e[j] - k + bq + (T_H/weights.sum()) - ((p_c*cbar).sum()))/p_tilde
+    #output = (((1+((1-tau_d[0])*r))*k0) + w*n*e[j] - k + bq - ((p_c*cbar).sum()))/p_tilde
+
+    #print ' transfer used for consumption, ', T_H
+    #print 'print diff in cons w and w/o transfer: ', np.absolute((((1+((1-tau_d[0])*r))*k0) + w*n*e[j] - k + bq + (T_H/weights.sum()) - ((p_c*cbar).sum()))/p_tilde -(((1+((1-tau_d[0])*r))*k0) + w*n*e[j] - k + bq - ((p_c*cbar).sum()))/p_tilde).max()
 
     return output
     
@@ -353,6 +361,8 @@ def get_k_demand(p_k,w,r,X):
               (((1-gamma)/gamma)**((epsilon-1)/epsilon))*((((r/(1-tau_g))+delta)*
               (1-((1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta_tau)**(-1.0)))))**(epsilon-1))))**(epsilon/(1-epsilon)))
 
+    #print 'diff in k_demand due to delta_tau: ', ((X/A)*(((gamma**(1/epsilon))+(((1-gamma)**(1/epsilon))*((p_k/w)**(epsilon-1))*(((1-gamma)/gamma)**((epsilon-1)/epsilon))*((((r/(1-tau_g))+delta)*(1-((1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta_tau)**(-1.0)))))**(epsilon-1))))**(epsilon/(1-epsilon))))-((X/A)*(((gamma**(1/epsilon))+(((1-gamma)**(1/epsilon))*((p_k/w)**(epsilon-1))*(((1-gamma)/gamma)**((epsilon-1)/epsilon))*((((r/(1-tau_g))+delta)*(1-((1-delta)*tau_b*delta*(((r/(1-tau_g))+delta)**(-1.0)))))**(epsilon-1))))**(epsilon/(1-epsilon))))
+
     return output
 
 def get_l_demand(p_k,w,r,K):
@@ -364,6 +374,8 @@ def get_l_demand(p_k,w,r,K):
     '''
     #output = K*((1-gamma)/gamma)*(((r+delta)*(p_k/w))**epsilon)
     output = K*((1-gamma)/gamma)*((p_k/w)**epsilon)*((((r/(1-tau_g))+delta)*(1-((1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta_tau)**(-1.0)))))**epsilon)
+
+    #print 'diff in l_demand due to delta_tau: ', (K*((1-gamma)/gamma)*((p_k/w)**epsilon)*((((r/(1-tau_g))+delta)*(1-((1-delta_tau)*tau_b*delta_tau*(((r/(1-tau_g))+delta_tau)**(-1.0)))))**epsilon))-(K*((1-gamma)/gamma)*((p_k/w)**epsilon)*((((r/(1-tau_g))+delta)*(1-((1-delta)*tau_b*delta*(((r/(1-tau_g))+delta)**(-1.0)))))**epsilon))
 
     return output
 
@@ -568,9 +580,11 @@ def Steady_State(guesses):
 
     # Find firm dividends
     DIV = ((1-tau_b)*(p*X - w*L_d) - ((1-(tau_b*(1-delta_tau)))*delta*p_k*K_d))
+    #print 'diff in divs due to delta_tau: ', (((1-tau_b)*(p*X - w*L_d) - ((1-(tau_b*(1-delta_tau)))*delta*p_k*K_d)))-(((1-tau_b)*(p*X - w*L_d) - ((1-(tau_b*(1-delta)))*delta*p_k*K_d)))
 
     # Find total taxes paid
     firm_taxes = tau_b*(p*X-w*L_d) - tau_b*(1-delta_tau)*delta*p_k*K_d
+    #print 'diff in firm taxes due to delta_tau: ', (tau_b*(p*X-w*L_d) - tau_b*(1-delta_tau)*delta*p_k*K_d)-(tau_b*(p*X-w*L_d) - tau_b*(1-delta)*delta*p_k*K_d)
 
     # Find value of each firm V = DIV/r in SS
     #V = (p*X - w*L_d - p_k*delta*K_d)/r
@@ -591,7 +605,8 @@ def Steady_State(guesses):
     # Check labor and asset market clearing conditions
     error1 = K_s - V.sum()
     error2 = L_s - L_d.sum()
-    error3 = T_H - (firm_taxes.sum() + (tau_d*DIV).sum())
+    #error3 = T_H - (firm_taxes.sum() + (tau_d*DIV).sum())
+    error3 = T_H - (firm_taxes.sum())
     
 
     print 'asset market diff: ', error1
@@ -613,11 +628,11 @@ def Steady_State(guesses):
     
 
 # Solve SS
-r_guess_init = 0.77
-w_guess_init = 1.03
-T_H_guess_init = 0.5  # total transfers, equal total tax rev here, tot pop here =1 so total equals per capita
+r_guess_init = 0.77 #0.746930316821  #0.77
+w_guess_init = 1.53867680151 #1.03
+T_H_guess_init = 0.0 #0.01  # total transfers, equal total tax rev here, tot pop here =1 so total equals per capita
 guesses = [r_guess_init, w_guess_init, T_H_guess_init]
-solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
+solutions = opt.fsolve(Steady_State, guesses, xtol=1e-12, col_deriv=1)
 #solutions = Steady_State(guesses)
 rss = solutions[0]
 wss = solutions[1]
@@ -631,7 +646,6 @@ p_ss = opt.fsolve(get_p, p_guesses, args=(rss, wss), xtol=1e-9, col_deriv=1)
 p_c_ss = get_p_c(p_ss)
 p_tilde_ss = get_p_tilde(p_c_ss)
 p_k_ss = np.dot(xi,p_ss)
-p_guesses = [1.0,1.0]
 print 'SS cons prices: ', p_ss, p_c_ss, p_k_ss, p_tilde_ss
 
 K_guess_init = np.ones((S, J)) * 0.05
@@ -700,7 +714,7 @@ labor_diff = L_s_ss - L_d_ss.sum()
 print 'Market clearing diffs: ', asset_diff, labor_diff
 
 firm_taxes_ss = tau_b*(p_ss*X_ss-wss*L_d_ss) - tau_b*(1-delta_tau)*delta*p_k_ss*K_d_ss
-tax_diff = T_H_ss - (firm_taxes_ss.sum() + (tau_d*DIV_ss).sum())
+tax_diff = T_H_ss - (firm_taxes_ss.sum())
 print 'Tax rev diffs: ', tax_diff
 
 
@@ -725,4 +739,7 @@ print(error2)
 print(error3)
 
 print 'kssmat: ', kss
+
+print 'ss r, w, T_H: ', rss, wss, T_H_ss
+
 

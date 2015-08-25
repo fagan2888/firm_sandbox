@@ -473,8 +473,8 @@ def Steady_State(guesses):
     
 
 # Solve SS
-r_guess_init = 0.77
-w_guess_init = 1.03 
+r_guess_init = 0.6
+w_guess_init = .83 
 guesses = [r_guess_init, w_guess_init]
 solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
 #solutions = Steady_State(guesses)
