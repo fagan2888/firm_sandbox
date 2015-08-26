@@ -471,6 +471,7 @@ def Steady_State(guesses, mu):
     
     # find prices of consumption goods
     p = get_p(r,w)
+    p = p/p[0]
     p_c = get_p_c(p)
     p_tilde = get_p_tilde(p_c)
     #print 'prices ', p, p_c, p_tilde
@@ -580,19 +581,19 @@ def Steady_State(guesses, mu):
         print 'distances: ', dist_vec[iteration], dist_vec[iteration-1], dist
         print 'mu: ', mu
 
-        #if iteration > 10:
-            #if dist_vec[iteration] - dist_vec[iteration-1] > 0:
+        if iteration > 10:
+            # if dist_vec[iteration] - dist_vec[iteration-1] > 0:
             #    mu /= 2.0
             #    print 'New value of mu:', mu
-            #if dist_r_vec[iteration] - dist_r_vec[iteration-1] > 0:
-            #    mu_r /= 2.0
-            #    print 'New value of mu_r:', mu_r
-            #if dist_w_vec[iteration] - dist_w_vec[iteration-1] > 0:
-            #    mu_w /= 2.0
-            #    print 'New value of mu_w:', mu_w
-            #if np.absolute(dist_vec[iteration] - dist_vec[iteration-1]) < 1e-8:
-            #     mu = 0.8
-            #     print 'Was stuck in a cycle at iteration', iteration
+            if dist_r_vec[iteration] - dist_r_vec[iteration-1] > 0:
+               mu_r /= 2.0
+               print 'New value of mu_r:', mu_r
+            if dist_w_vec[iteration] - dist_w_vec[iteration-1] > 0:
+               mu_w /= 2.0
+               print 'New value of mu_w:', mu_w
+            if np.absolute(dist_vec[iteration] - dist_vec[iteration-1]) < 1e-8:
+                mu = 0.8
+                print 'Was stuck in a cycle at iteration', iteration
         iteration += 1
         print "Iteration: %02d" % iteration, " Distance: ", dist
 
@@ -611,6 +612,7 @@ wss = solutions[1]
 print 'ss r, w: ', rss, wss
 
 p_ss = get_p(rss,wss)
+p_ss = p_ss/p_ss[0]
 p_c_ss = get_p_c(p_ss)
 p_tilde_ss = get_p_tilde(p_c_ss)
 print 'SS cons prices: ', p_ss, p_c_ss, p_tilde_ss
