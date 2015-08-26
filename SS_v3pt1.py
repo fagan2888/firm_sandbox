@@ -488,6 +488,7 @@ def Steady_State(guesses):
     # find prices of consumption and capital goods
     p_guesses = np.ones(M)
     p = opt.fsolve(get_p, p_guesses, args=(r, w), xtol=1e-9, col_deriv=1)
+    p = p/p[0] # normalize so all prices in terms of industry 1 output price
     p_c = get_p_c(p)
     p_tilde = get_p_tilde(p_c)
     p_k = np.dot(xi,p)
@@ -624,10 +625,10 @@ print 'ss r, w: ', rss, wss
 # find prices of consumption and capital goods
 p_guesses = np.ones(M)
 p_ss = opt.fsolve(get_p, p_guesses, args=(rss, wss), xtol=1e-9, col_deriv=1)
+p_ss = p_ss/p_ss[0] # normalize so all prices in terms of industry 1 output price
 p_c_ss = get_p_c(p_ss)
 p_tilde_ss = get_p_tilde(p_c_ss)
 p_k_ss = np.dot(xi,p_ss)
-p_guesses = [1.0,1.0]
 print 'SS cons prices: ', p_ss, p_c_ss, p_k_ss, p_tilde_ss
 
 K_guess_init = np.ones((S, J)) * 0.05

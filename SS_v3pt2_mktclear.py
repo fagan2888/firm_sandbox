@@ -112,7 +112,7 @@ weights = omega*lambdas/((omega*lambdas).sum()) # weights - dividing so weights 
 tau_b = np.ones(M)*0.0 #0.25
 tau_d = np.ones(M)*0.0 #0.15 # without adjustment costs, want div tax rate to exceed cap gains rate
 tau_g = np.ones(M)*0.0 #0.12 
-delta_tau = delta*1.2 # for not just make tax depreciation rate some scaled version of the rate of physical depreciation
+delta_tau = delta#*1.2 # for not just make tax depreciation rate some scaled version of the rate of physical depreciation
 
 # Functions and Definitions
 
@@ -523,6 +523,7 @@ def Steady_State(guesses):
     # find prices of consumption and capital goods
     p_guesses = np.ones(M)
     p = opt.fsolve(get_p, p_guesses, args=(r, w), xtol=1e-9, col_deriv=1)
+    p = p/p[0]
     p_c = get_p_c(p)
     p_tilde = get_p_tilde(p_c)
     p_k = np.dot(xi,p)
@@ -568,6 +569,7 @@ def Steady_State(guesses):
     x_sol = opt.fsolve(solve_output, guesses, args=(p_k, w, r, X_c), xtol=1e-9, col_deriv=1)
 
     X = x_sol
+    #print 'Output by industry, ', X
 
     # find aggregate savings and labor supply
     K_s, K_constr = get_K(k)
@@ -577,6 +579,9 @@ def Steady_State(guesses):
     #### Need to solve for labor and capital demand from each industry
     K_d = get_k_demand(p_k, w, r, X)
     L_d = get_l_demand(p_k, w, r, K_d)
+
+    #print 'Capital demands: ', K_d
+    #print 'Labor demands: ', L_d
 
     # Find firm dividends
     DIV = ((1-tau_b)*(p*X - w*L_d) - ((1-(tau_b*(1-delta_tau)))*delta*p_k*K_d))
@@ -590,10 +595,12 @@ def Steady_State(guesses):
     #V = (p*X - w*L_d - p_k*delta*K_d)/r
     V = ((1-tau_d)*DIV)/r
 
+    print 'check V:', V.sum()-(p_k*K_d).sum()
+
     # Checking that interest rates are common across firms
     r_guess = r 
     r_implied = opt.fsolve(solve_r, r_guess, args=(K_d, X, p, p_k), xtol=1e-9, col_deriv=1)
-    print 'interest rates by firm and r guessed: ', r_implied, r
+    #print 'interest rates by firm and r guessed: ', r_implied, r
 
     # Alternative way to find factor demand from each industry as a function of factor supply
     # k_m_guesses = (X/X.sum())*K_s
@@ -628,8 +635,8 @@ def Steady_State(guesses):
     
 
 # Solve SS
-r_guess_init = 0.77 #0.746930316821  #0.77
-w_guess_init = 1.53867680151 #1.03
+r_guess_init = 0.97 #0.9 #0.746930316821
+w_guess_init = 1.03 #2.5 #1.53867680151
 T_H_guess_init = 0.0 #0.01  # total transfers, equal total tax rev here, tot pop here =1 so total equals per capita
 guesses = [r_guess_init, w_guess_init, T_H_guess_init]
 solutions = opt.fsolve(Steady_State, guesses, xtol=1e-12, col_deriv=1)
@@ -643,6 +650,7 @@ print 'ss r, w, T_H: ', rss, wss, T_H_ss
 # find prices of consumption and capital goods
 p_guesses = np.ones(M)
 p_ss = opt.fsolve(get_p, p_guesses, args=(rss, wss), xtol=1e-9, col_deriv=1)
+p_ss = p_ss/p_ss[0]
 p_c_ss = get_p_c(p_ss)
 p_tilde_ss = get_p_tilde(p_c_ss)
 p_k_ss = np.dot(xi,p_ss)

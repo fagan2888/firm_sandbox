@@ -438,6 +438,7 @@ def Steady_State(guesses):
     # find prices of consumption and capital goods
     p_guesses = np.ones(M)
     p = opt.fsolve(get_p, p_guesses, args=(r, w), xtol=1e-14, col_deriv=1)
+    p = p/p[0]
     p_c = get_p_c(p)
     p_tilde = get_p_tilde(p_c)
     p_k = np.dot(xi,p)
@@ -483,22 +484,25 @@ def Steady_State(guesses):
     x_sol = opt.fsolve(solve_output, guesses, args=(p_k, w, r, X_c), xtol=1e-14, col_deriv=1)
 
     X = x_sol
+    #print 'Output by industry, ', X
 
     # find aggregate savings and labor supply
     K_s, K_constr = get_K(k)
     L_s = get_L(n)
-
+    #print 'factor supplies: ', K_s, L_s
 
     #### Need to solve for labor and capital demand from each industry
-    K_d = gamma*X*(A**(1-epsilon))*((p/(p_k*(r+delta)))**(epsilon))
-    #K_d = get_k_demand(p_k, w, r, X)
+    #K_d = gamma*X*(A**(1-epsilon))*((p/(p_k*(r+delta)))**(epsilon))
+    K_d = get_k_demand(p_k, w, r, X)
     L_d = get_l_demand(p_k, w, r, K_d)
 
+    #print 'Capital demands: ', K_d
+    #print 'Labor demands: ', L_d
 
     # Find value of each firm V = DIV/r in SS
-    #V = (p*X - w*L_d - p_k*delta*K_d)/r
-    V = p_k*K_d
-    #print 'check V:', V.sum()-(p_k*K_d).sum()
+    V = (p*X - w*L_d - p_k*delta*K_d)/r
+    #V = p_k*K_d
+    print 'check V:', V.sum()-(p_k*K_d).sum()
 
     # Check labor and asset market clearing conditions
     error1 = K_s - V.sum()
@@ -535,6 +539,7 @@ print 'ss r, w: ', rss, wss
 # find prices of consumption and capital goods
 p_guesses = np.ones(M)
 p_ss = opt.fsolve(get_p, p_guesses, args=(rss, wss), xtol=1e-14, col_deriv=1)
+p_ss = p_ss/p_ss[0]
 p_c_ss = get_p_c(p_ss)
 p_tilde_ss = get_p_tilde(p_c_ss)
 p_k_ss = np.dot(xi,p_ss)

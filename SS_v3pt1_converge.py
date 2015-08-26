@@ -63,9 +63,9 @@ TPImindist   = Cut-off distance between iterations for TPI
 '''
 
 #computational parameters
-maxiter = 1000
+maxiter = 10
 mindist_SS = 1e-9
-mu = 0.5
+mu = 0.1
 
 
 # Parameters
@@ -488,6 +488,7 @@ def Steady_State(guesses, mu):
     # find prices of consumption and capital goods
     p_guesses = np.ones(M)
     p = opt.fsolve(get_p, p_guesses, args=(r, w), xtol=1e-9, col_deriv=1)
+    p = p/p[0] # normalize so all prices in terms of industry 1 output price
     p_c = get_p_c(p)
     p_tilde = get_p_tilde(p_c)
     p_k = np.dot(xi,p)
@@ -549,21 +550,33 @@ def Steady_State(guesses, mu):
 
 
         #### Need to solve for labor and capital demand from each industry
-        K_d_check = get_k_demand(p_k, w, r, X)
-        L_d_check = get_l_demand(p_k, w, r, K_d)
+        #K_d_check = get_k_demand(p_k, w, r, X)
+        #L_d_check = get_l_demand(p_k, w, r, K_d)
+        #K_d = get_k_demand(p_k, w, r, X)
+        #L_d = get_l_demand(p_k, w, r, K_d)
 
 
         # Find value of each firm V = DIV/r in SS
-        V = (p*X - w*L_d - p_k*delta*K_d)/r
+        #V = (p*X - w*L_d - p_k*delta*K_d)/r
+        V = p_k*K_d
+        print 'checking V two ways: ', V-(p_k*K_d)
+
+        # find residual to determine labor and capital demand for one industry
+        # this industry will be used to get the implied interest and wage rate
+        #L_d[0]= max(L_s-L_d[1:].sum(),1e-4)
+        #V[0] = max(K_s - V[1:].sum(),1e-4)
+        #K_d[0] = max(((p*X - w*L_d-r*V)/(p_k*delta))[0],1e-4)
 
         # Find implied r, w
         r_new = get_r(X,K_d,p_k,p)[0]
         #r_new = (p*X - w*L_d - p_k*delta*K_d).sum()/K_s
-        w_new = get_w(X, L_d, p)[0]
+        w_new = get_w(X,L_d,p)[0]
         #r_new = (p*X - w*L_d - p_k*delta*K_d).sum()/K_s
         #w_new = get_w(X, L_s, p)[0]
         
-        print 'checking r', get_r(X,K_d,p_k,p)-get_r(X,K_d_check,p_k,p)
+        #print 'checking r', get_r(X,K_d,p_k,p)-get_r(X,K_d_check,p_k,p)
+        print 'interest rates by industry: ', get_r(X,K_d,p_k,p)
+        print 'wage rates by industry: ', get_w(X,L_d,p)
 
         print 'checking asset market', K_s - V.sum()
         print 'checking labor market', L_s - L_d.sum()
@@ -613,10 +626,10 @@ print 'ss r, w: ', rss, wss
 # find prices of consumption and capital goods
 p_guesses = np.ones(M)
 p_ss = opt.fsolve(get_p, p_guesses, args=(rss, wss), xtol=1e-9, col_deriv=1)
+p_ss = p_ss/p_ss[0] # normalize so all prices in terms of industry 1 output price
 p_c_ss = get_p_c(p_ss)
 p_tilde_ss = get_p_tilde(p_c_ss)
 p_k_ss = np.dot(xi,p_ss)
-p_guesses = [1.0,1.0]
 print 'SS cons prices: ', p_ss, p_c_ss, p_k_ss, p_tilde_ss
 
 K_guess_init = np.ones((S, J)) * 0.05
