@@ -20,10 +20,10 @@ Adding two firms:
 
 Adding dynamic firms:
 - 3.0_mktclear: Extend 2.1_mktclear to have dynamic firms.  Test with two firms first.  Asset and labor market clearing.  Works.
-- 3.1_mktclear: Extend 3.0 to have M firms (so similar to 2.5, but with dynamic firms).  Works.  *** Issue here and with subsequent programs - different eqm found for different initial values.  Solutions seem to satisfy all equations, but different SS values.  How can this be?????
-- 3.1: is 3.1_mktclear with the alt sol'n that doesn't rely on market clearing.  Seems to work, but for same initial guess, gives diff eq'm r,w than 3.1_mktclear.  This seems like a problem, but if use sol'n to 3.1_mktclear as originial guess, that is sol'n here (and vice versa - if use 3.1 sol'n for guess in 3.1_mktclear then that is the solution there).
+- 3.1_mktclear: Extend 3.0 to have M firms (so similar to 2.5, but with dynamic firms).  Works. Note that with dynamic firms, it's important to normalize one of the prices to one (eg price of output from industry 1)
+- 3.1: is 3.1_mktclear with the alt sol'n that doesn't rely on market clearing.  Works and same answer are 3.1_mktclear.
 - 3.1_mktclear_load_params: Extend 3.1 to import params from Fullerton Rogers for I=17, M=19.  Works. Note that need to adjust starting value for interest rate downwards as number of periods of economic life of agents increases.  Success with S=5 to S=17.
-- 3.2_mktclear: dynamic firms with capital gains, dividend, and corporate income tax.  Adds gov't transfers (which are needed in "outer" GE loop of problem).  When taxes set to zero, rss and wss same as in 3.1_mktclear - except that initial guess of T_H does matter - if guess zero, this is true, if guess not zero, then converges to 1e-31 (about zero), but wss not equal to 3.1_mktclear. Further is initial guess of T_H from 0, the more off wss is (though in each case markets clear, rc binds, euler errors small).
+- 3.2_mktclear: dynamic firms with capital gains, dividend, and corporate income tax.  Adds gov't transfers (which are needed in "outer" GE loop of problem).  When taxes set to zero, rss and wss same as in 3.1_mktclear.
 
 Transition path:
 - TPI_v3 = Extend 3.0 to solve SS and transition path

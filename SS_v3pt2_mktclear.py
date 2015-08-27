@@ -112,7 +112,7 @@ weights = omega*lambdas/((omega*lambdas).sum()) # weights - dividing so weights 
 tau_b = np.ones(M)*0.0 #0.25
 tau_d = np.ones(M)*0.0 #0.15 # without adjustment costs, want div tax rate to exceed cap gains rate
 tau_g = np.ones(M)*0.0 #0.12 
-delta_tau = delta#*1.2 # for not just make tax depreciation rate some scaled version of the rate of physical depreciation
+delta_tau = delta*1.2 # for not just make tax depreciation rate some scaled version of the rate of physical depreciation
 
 # Functions and Definitions
 
@@ -523,10 +523,12 @@ def Steady_State(guesses):
     # find prices of consumption and capital goods
     p_guesses = np.ones(M)
     p = opt.fsolve(get_p, p_guesses, args=(r, w), xtol=1e-9, col_deriv=1)
+    T_H=T_H/p[0]
     p = p/p[0]
     p_c = get_p_c(p)
     p_tilde = get_p_tilde(p_c)
     p_k = np.dot(xi,p)
+
 
 
     #print 'prices ', p, p_c, p_k, p_tilde
@@ -630,7 +632,7 @@ def Steady_State(guesses):
     if w <= 0:
         error2 += 1e9
 
-    #print 'r and w errors: ', error1, error2
+    print 'r and w errors: ', error1, error2, error3
     return [error1, error2, error3]
     
 
