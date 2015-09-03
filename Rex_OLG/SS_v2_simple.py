@@ -104,9 +104,30 @@ def min_consump(p):
     '''
     return np.sum(cbar*p)
 
-def consumption(w,r,n,b0,b1,minimum):
+def consumption(w,r,n,p,b0,b1,minimum):
+    '''
+    Returns S length Consumption vector
+    Params
+    w - wage guess
+    r - rate guess
+    n - labor vector
+    p - composite price
+    b0 - kapital vector for first period
+    b1 = capital bector for next period
+    minimum - minimum bundle of good required
+    '''
     c = (((1/p) * ((1+r) * b0 + w * n - b1 - minimum)))
     return c 
+
+def foc_k(r,c):
+    '''
+    Returns the first order condition vector for capital
+    Params
+    w - wage guess
+    c - consumption vector
+    '''
+    error = c[:-1]**-sigma-(1+r)*beta*(c[1:])**-sigma
+    
 
 def savings_euler(savings_guess, r, w, p, minimum):
     '''
@@ -131,22 +152,24 @@ def savings_euler(savings_guess, r, w, p, minimum):
     b1[1:]  = savings_guess
     b2[:-1] = savings_guess
     b3[:-2] = savings_guess[1:]
-    error = (((1/p) * ((1+r) * b1 + w * n1- b2 - minimum))**-sigma
-            -beta*(1+r)*((1/p) * ((1+r) * b2 + w * n2 - b3 - minimum))**-sigma)
-    #Currently isn't working because consumption is negative, pull out consumption seperate and then make a mask to exacerbate errors
+    c = consumption(w_guess, r_guess, nvec, p, b1, b2, minimum)
+    print c
+    error = foc_k(r,c)
+    mask1 = c <=0
+    
 
     return error
 
 
     
 prices = firm_price(r_guess,w_guess)
-print prices
+#print prices
 minimum = min_consump(prices)
 com_price = comp_price(prices)
-print com_price
+#print com_price
 guessvec = np.array((.2,.3))
+
 error = savings_euler(guessvec, r_guess, w_guess, com_price, minimum)
-print error 
 
 
 
