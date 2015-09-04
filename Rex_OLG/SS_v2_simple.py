@@ -104,9 +104,53 @@ def min_consump(p):
     '''
     return np.sum(cbar*p)
 
-def consumption(w,r,n,b0,b1,minimum):
-    c = (((1/p) * ((1+r) * b0 + w * n - b1 - minimum)))
+def consumption(w,r,n,p,b,minimum):
+    '''
+    Returns S length Consumption vector
+    Params
+    w - wage guess
+    r - rate guess
+    n - labor vector
+    p - composite price
+    b0 - kapital vector for first period
+    b1 = capital bector for next period
+    minimum - minimum bundle of good required
+    '''
+    b1 = np.zeros(S)
+    b2 = np.zeros(S)
+    b3 = np.zeros(S)
+    b1[1:]  = b
+    b2[:-1] = b
+    b3[:-2] = b[1:]
+    c = (((1/p) * ((1+r) * b1 + w * n - b2 - minimum)))
     return c 
+
+def foc_k(r,c):
+    '''
+    Returns the first order condition vector for capital
+    Params
+    w - wage guess
+    c - consumption vector
+    '''
+    error = c[:-1]**-sigma-(1+r)*beta*(c[1:])**-sigma
+    print error 
+    return error
+
+def consump_euler(consump_guess, r, w, n, p, minimum, b):
+    '''
+    This willl solve for a new consumption vector of S length
+    Eq. 11.45 in Rick's write up
+    '''
+    b1 = np.zeros(S)
+    b2 = np.zeros(S)
+    b3 = np.zeros(S)
+    b1[1:]  = b
+    b2[:-1] = b
+    b3[:-2] = b[1:]
+    print b1, b2
+    
+    return p*consump_guess + minimum + b2 - (1+r)*b1 + w*n
+    
 
 def savings_euler(savings_guess, r, w, p, minimum):
     '''
@@ -122,32 +166,33 @@ def savings_euler(savings_guess, r, w, p, minimum):
     '''
     #TODO Make this work with a bequest motive, so they can save in the last period
     #Also make it work with the labor correctly after endogonizing
-    b1 = np.zeros(S)
-    b2 = np.zeros(S)
-    b3 = np.zeros(S)
     n1 = np.copy(nvec)
     n2 = np.zeros(S)
     n2[:-1] = nvec[1:]
-    b1[1:]  = savings_guess
-    b2[:-1] = savings_guess
-    b3[:-2] = savings_guess[1:]
-    error = (((1/p) * ((1+r) * b1 + w * n1- b2 - minimum))**-sigma
-            -beta*(1+r)*((1/p) * ((1+r) * b2 + w * n2 - b3 - minimum))**-sigma)
-    #Currently isn't working because consumption is negative, pull out consumption seperate and then make a mask to exacerbate errors
-
-    return error
+    c = consumption(w_guess, r_guess, nvec, p, savings_guess, minimum)
+    #print c
+    error1 = foc_k(r,c)
+    #mask1 =  <= 0
+    #print mask1
+    #error1[mask1] += 1e10
+    return error1
 
 
     
 prices = firm_price(r_guess,w_guess)
-print prices
+#print prices
 minimum = min_consump(prices)
 com_price = comp_price(prices)
 print com_price
 guessvec = np.array((.2,.3))
-error = savings_euler(guessvec, r_guess, w_guess, com_price, minimum)
-print error 
 
+newb = opt.fsolve(savings_euler, guessvec, args = (r_guess, w_guess, com_price, minimum))
+#print newb
+
+c_guess = consumption(w_guess, r_guess, nvec, com_price, newb, minimum)
+newc = consump_euler(c_guess, r_guess, w_guess, nvec, com_price, minimum, newb)
+#print (c_guess, r_guess, w_guess, nvec, com_price, minimum, newb)
+#print newc
 
 
 
