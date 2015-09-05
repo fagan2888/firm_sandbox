@@ -49,7 +49,7 @@ I = 2 # number of consumption goods
 M = 2 # number of production industries
 
 
-def cap_clear(L_demand, nvec):
+def lab_clear(L_demand, nvec):
     '''
     Checks the Capital market to see if it is cleared
     Eq. 11.36 in Rick's write-up
@@ -59,7 +59,7 @@ def cap_clear(L_demand, nvec):
     '''
     return np.sum(L_demand) - np.sum(nvec)
 
-def lab_clear(K_demand, bvec):
+def cap_clear(K_demand, bvec):
     '''
     Checks the Labor market to see if it is cleared
     Eq. 11.35 in Rick's write-up
@@ -166,9 +166,44 @@ def agg_consump(consump_demand):
     return agg_demand
 
 def get_Y(C, r, w):
-    #THIS IS WRONG TODO FIX IT
-    Y = C*((1-(delta/A)*(gamma**(1/epsilon)+(1-gamma)**(1/epsilon)*
-        ((r+delta/w)**(epsilon-1)*((1-gamma)/gamma)**((epsilon-1)/epsilon)
+    '''
+    Returns an M length vector of the output for each firm
+    Parameters
+    r - current rate guess
+    w - current wage guess
+    C - Consumption of each good M length vector
+    '''
+    Y = C*(1-(delta/A)*(gamma**(1/epsilon)+(1-gamma)**(1/epsilon)*
+        ((r+delta)/w)**(epsilon-1)*((1-gamma)/gamma)**((epsilon-1)/epsilon))**
+        (epsilon/(1-epsilon)))**(-1)
+    return Y
+
+def get_K(Y, pbar, com_p, r, w):
+    '''
+    Returns the Capital Demand of the firms
+    Params
+    r - current rate guess
+    w - current wage guess
+    Y - Output of each firm, M firms
+    pbar - price of ecah good, M prices
+    com_P - weighted composite price p
+    '''
+    K = (Y/A)*(gamma**(1/epsilon)+(1-gamma)**(1/epsilon)*((r+delta)/w)**
+            (epsilon-1)*((1-gamma)/gamma)**((epsilon-1)/epsilon))**(epsilon/(1-epsilon))
+    return K
+
+def get_L(K, r, w):
+    '''
+    Returns the Capital Demand of the firms
+    Params
+    r - current rate guess
+    w - current wage guess
+    Y - Output of each firm, M firms
+    pbar - price of ecah good, M prices
+    com_P - weighted composite price p
+    '''
+    L = K*((1-gamma)/gamma)*((r+delta)/w)**epsilon
+    return L
 
         
     
@@ -184,7 +219,16 @@ c_guess = consumption(w_guess, r_guess, nvec, com_price, newb, minimum)
 ss_consump = hh_ss_consumption(c_guess, com_price, prices)
 #print ss_consump
 Cbar = agg_consump(ss_consump)
-print Cbar
+Ybar = get_Y(Cbar, r_guess, w_guess)
+Kbar = get_K(Ybar, prices, com_price, r_guess, w_guess)
+Lbar = get_L(Kbar, r_guess, w_guess)
+L_mkt_clear = lab_clear(Lbar, nvec)
+K_mkt_clear = cap_clear(Kbar, newb)
+print 'Market Clearing conditions '
+print 'Labor: ', L_mkt_clear
+print 'Capital: ', K_mkt_clear
+
+
 
 
 
