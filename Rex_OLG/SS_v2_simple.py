@@ -23,6 +23,7 @@ epsilon      = elasticity of substitution between capital and labor
 alpha        = Share of goods in composite consump
 A            = total factor productivity parameter in firms' production
                function
+lamb         = convex combo param
 delta_annual = depreciation rate of capital for one year
 delta        = depreciation rate of capital for each cohort
 cbar       = minimum value amount of consumption
@@ -43,6 +44,7 @@ cbar = np.array([0.001, 0.001]) # min cons of each of I goods, shape =(I,)
 delta = .05
 epsilon = np.array((.55, .45))
 gamma = np.array((.6, .5))
+lamb = .1
 A = 1.0 # Total factor productivity
 S = 3 # periods in life of hh
 I = 2 # number of consumption goods
@@ -121,7 +123,11 @@ def consumption(w,r,n,p,b,minimum):
     b2[:-1] = b
     b3[:-2] = b[1:]
     c = (((1/p) * ((1+r) * b1 + w * n - b2 - minimum)))
-    return c 
+    print c
+    cmask = c < 0
+    if cmask.any() == True:
+        print 'ERROR: consumption < 0'
+    return c, cmask
 
 def foc_k(r,c):
     '''
@@ -150,8 +156,13 @@ def savings_euler(savings_guess, r, w, p, minimum):
     n1 = np.copy(nvec)
     n2 = np.zeros(S)
     n2[:-1] = nvec[1:]
-    c = consumption(w_guess, r_guess, nvec, p, savings_guess, minimum)
+    c, cmask = consumption(w, r, nvec, p, savings_guess, minimum)
     error1 = foc_k(r,c)
+    #print cmask
+    #print error1
+    #error1[cmask[:-1]] = 10000
+    #print error1
+    #raw_input()
     return error1
 
 def hh_ss_consumption(c, cum_p, prices):
@@ -205,11 +216,91 @@ def get_L(K, r, w):
     L = K*((1-gamma)/gamma)*((r+delta)/w)**epsilon
     return L
 
-        
-    
+def calc_new_r(p, Y, K):
+    '''
+    Gives a new implied interest rate using FOC for a firm
+    '''
+    r_new = p*((gamma[0]*Y)/K)*A**((epsilon[0]-1)/1)-delta
+    return r_new
+
+def calc_new_w(p, Y, L):
+    '''
+    Gives a new implied wage rate using FOC for a firm
+    '''
+    w_new = p*(((1-gamma[0])*Y)/L)*A**((epsilon[0]-1)/1)
+    return w_new
+
+def ss_solve_convex(rw_init,nvec):
+    error = 1
+    r_guess = rw_init[0]
+    w_guess = rw_init[1]
+    while error > .000001:
+        prices = firm_price(r_guess,w_guess)
+        minimum = min_consump(prices)
+        com_price = comp_price(prices)
+        guessvec = np.array((.2,.3))
+        newb = opt.fsolve(savings_euler, guessvec, args = (r_guess, w_guess, com_price, minimum))
+        c_guess, cmask = consumption(w_guess, r_guess, nvec, com_price, newb, minimum)
+        ss_consump = hh_ss_consumption(c_guess, com_price, prices)
+        #print ss_consump
+        Cbar = agg_consump(ss_consump)
+        Ybar = get_Y(Cbar, r_guess, w_guess)
+        K_demand = get_K(Ybar, prices, com_price, r_guess, w_guess)
+        L_demand = get_L(K_demand, r_guess, w_guess)
+        L_mkt_clear = lab_clear(L_demand, nvec)
+        K_mkt_clear = cap_clear(K_demand, newb)
+        print 'Market Clearing conditions '
+        print 'Labor: ', L_mkt_clear
+        print 'Capital: ', K_mkt_clear
+        #print 'prices: {}, Consumption: {}, K: {}'.format(prices, Ybar, K_demand)
+        r_new = calc_new_r(prices[0], Ybar[0], K_demand[0])
+        w_new = calc_new_w(prices[0], Ybar[0], L_demand[0])
+        #print 'w', w_new
+        #print 'r', r_new
+        diff = np.array(([abs(r_guess-r_new),abs(w_guess-w_new)]))
+        error = np.max(diff)
+        print error, '\n'
+        r_guess = lamb*r_new + (1-lamb)*r_guess
+        w_guess = lamb*w_new + (1-lamb)*w_guess
+    return np.array(([r_new, w_new]))
+
+def ss_solve_fsolve(rw_init,nvec):
+    r_guess = rw_init[0]
+    w_guess = rw_init[1]
+    while error > .0001:
+        prices = firm_price(r_guess,w_guess)
+        minimum = min_consump(prices)
+        com_price = comp_price(prices)
+        guessvec = np.array((.2,.3))
+        newb = opt.fsolve(savings_euler, guessvec, args = (r_guess, w_guess, com_price, minimum))
+        c_guess, cmask = consumption(w_guess, r_guess, nvec, com_price, newb, minimum)
+        ss_consump = hh_ss_consumption(c_guess, com_price, prices)
+        #print ss_consump
+        Cbar = agg_consump(ss_consump)
+        Ybar = get_Y(Cbar, r_guess, w_guess)
+        K_demand = get_K(Ybar, prices, com_price, r_guess, w_guess)
+        L_demand = get_L(K_demand, r_guess, w_guess)
+        L_mkt_clear = lab_clear(L_demand, nvec)
+        K_mkt_clear = cap_clear(K_demand, newb)
+        print 'Market Clearing conditions '
+        print 'Labor: ', L_mkt_clear
+        print 'Capital: ', K_mkt_clear
+        #print 'prices: {}, Consumption: {}, K: {}'.format(prices, Ybar, K_demand)
+        r_new = calc_new_r(prices[0], Ybar[0], K_demand[0])
+        w_new = calc_new_w(prices[0], Ybar[0], L_demand[0])
+        #print 'w', w_new
+        #print 'r', r_new
+        diff = np.array(([abs(r_guess-r_new),abs(w_guess-w_new)]))
+        error = np.max(diff)
+        print error, '\n'
+        r_guess = r_new
+        w_guess = w_new
+    return np.array(([r_new, w_new]))
+nvec = np.array((1.,1.,.2))
+'''
 w_guess = .4
 r_guess = .1
-nvec = np.array((1.,1.,.2))
+guessvec = np.array(([.4,.1]))
 prices = firm_price(r_guess,w_guess)
 minimum = min_consump(prices)
 com_price = comp_price(prices)
@@ -220,15 +311,22 @@ ss_consump = hh_ss_consumption(c_guess, com_price, prices)
 #print ss_consump
 Cbar = agg_consump(ss_consump)
 Ybar = get_Y(Cbar, r_guess, w_guess)
-Kbar = get_K(Ybar, prices, com_price, r_guess, w_guess)
-Lbar = get_L(Kbar, r_guess, w_guess)
-L_mkt_clear = lab_clear(Lbar, nvec)
-K_mkt_clear = cap_clear(Kbar, newb)
+K_demand = get_K(Ybar, prices, com_price, r_guess, w_guess)
+L_demand = get_L(K_demand, r_guess, w_guess)
+L_mkt_clear = lab_clear(L_demand, nvec)
+K_mkt_clear = cap_clear(K_demand, newb)
 print 'Market Clearing conditions '
 print 'Labor: ', L_mkt_clear
 print 'Capital: ', K_mkt_clear
+print 'prices: {}, Consumption: {}, K: {}'.format(prices, Ybar, K_demand)
+r_new = calc_new_r(prices[0], Ybar[0], K_demand[0])
+w_new = calc_new_w(prices[0], Ybar[0], L_demand[0])
+print 'w', w_new
+print 'r', r_new
+diff = np.array(([abs(r_guess-r_new),abs(w_guess-w_new)]))
+print diff
+'''
 
-
-
-
-
+nvec = np.array((1.,1.,.2))
+rw = np.array(([.4,.1]))
+print ss_solve_convex(rw, nvec)
