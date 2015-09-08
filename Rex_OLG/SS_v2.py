@@ -1,6 +1,6 @@
 '''
 Author: Rex McArthur
-Last updated: 08/03/2015
+Last updated: 09/01/2015
 
 Calculates Steady state OLG model with S age cohorts, J types, 2 static firms
 
