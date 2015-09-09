@@ -1,6 +1,6 @@
 '''
 Author: Rex McArthur
-Last updated: 09/03/2015
+Last updated: 09/08/2015
 
 Calculates Steady state OLG model with 3 age cohorts, 2 static firms
 
@@ -157,12 +157,11 @@ def savings_euler(savings_guess, r, w, p, minimum):
     n2 = np.zeros(S)
     n2[:-1] = nvec[1:]
     c, cmask = consumption(w, r, nvec, p, savings_guess, minimum)
+    c[c<0] = .001
     error1 = foc_k(r,c)
-    #print cmask
-    #print error1
-    #error1[cmask[:-1]] = 10000
-    #print error1
-    #raw_input()
+    error1[cmask[:-1]] = 100000
+    if cmask[-1] == True:
+        error1 = [10000,100000]
     return error1
 
 def hh_ss_consumption(c, cum_p, prices):
@@ -230,6 +229,20 @@ def calc_new_w(p, Y, L):
     w_new = p*(((1-gamma[0])*Y)/L)*A**((epsilon[0]-1)/1)
     return w_new
 
+def calc_k_res(k_supply, k_demand):
+    '''
+    Calculates the residual capital used in calculating the new_r and new_w
+    '''
+    k_res = k_supply - np.sum(k_demand[1:])
+    return k_res
+
+def calc_l_res(l_supply, l_demand):
+    '''
+    Calculates the residual labor used in calculating the new_r and new_w
+    '''
+    l_res = l_supply - np.sum(l_demand[1:])
+    return l_res
+
 def ss_solve_convex(rw_init,nvec):
     error = 1
     r_guess = rw_init[0]
@@ -247,14 +260,19 @@ def ss_solve_convex(rw_init,nvec):
         Ybar = get_Y(Cbar, r_guess, w_guess)
         K_demand = get_K(Ybar, prices, com_price, r_guess, w_guess)
         L_demand = get_L(K_demand, r_guess, w_guess)
+        ###HERE IS THE BREAK TO FIND NEWR
+        K_supply = np.sum(newb)
+        L_supply = np.sum(nvec)
+        k_res = calc_k_res(np.sum(newb), K_demand)
+        l_res = calc_l_res(np.sum(nvec), L_demand)
+        print k_res, l_res
         L_mkt_clear = lab_clear(L_demand, nvec)
         K_mkt_clear = cap_clear(K_demand, newb)
         print 'Market Clearing conditions '
         print 'Labor: ', L_mkt_clear
         print 'Capital: ', K_mkt_clear
-        #print 'prices: {}, Consumption: {}, K: {}'.format(prices, Ybar, K_demand)
-        r_new = calc_new_r(prices[0], Ybar[0], K_demand[0])
-        w_new = calc_new_w(prices[0], Ybar[0], L_demand[0])
+        r_new = calc_new_r(prices[0], Ybar[0], k_res)
+        w_new = calc_new_w(prices[0], Ybar[0], l_res)
         #print 'w', w_new
         #print 'r', r_new
         diff = np.array(([abs(r_guess-r_new),abs(w_guess-w_new)]))
