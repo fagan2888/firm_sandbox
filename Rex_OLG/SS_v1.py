@@ -292,8 +292,8 @@ def solve(guesses):
     w_ss = x[1]
     print 'rate ', r_ss
     print 'wage ', w_ss
-    r = guesses[0]
-    w = guesses[1]
+    r = x[0]
+    w = x[1]
 
     #Find corresponding prices of consumption goods
     p_c1 = get_p(r,w)

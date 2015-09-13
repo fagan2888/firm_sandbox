@@ -114,16 +114,49 @@ The model assumed for these solutions is one without taxes or bequests.  Endogen
 
 \item With $\bar{X}_{m}$ and prices, we can solve for the demand for capital from each industry.  We'll use the capital market clearing condition ($\sum_{m=1}^{M} \bar{K}_{m}=\sum_{j=1}^{J}\sum_{s=1}^{S} \bar{b}_{j,s}$) and the firm's FOC for capital together to find these demands.  Denoting the supply of capital as $\bar{K}^{s}=\sum_{j=1}^{J}\sum_{s=1}^{S} \bar{b}_{j,s}$, we have:
 
-	\begin{equation}
-	\bar{K}_{m} = \bar{K}^{s} - \sum_{k \neq m} \gamma_{k}\bar{X}_{k}\left(\frac{\bar{p}_{m}\left(\frac{\gamma_{m}\bar{X}_{m}}{\bar{K}_{m}}\right)\bar{A}_{m}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{\bar{p}_{k}}\bar{A}_{k}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+		\begin{equation}
+	\begin{split}
+	& \bar{r}+\delta_{m} = \bar{p}_{m}\left(\frac{\gamma_{m}\bar{X}_{m}}{\bar{K}_{m}}\right)^{\frac{1}{\epsilon_{m}}}\bar{A}_{m}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}} \\
+	\implies & \frac{\left(\frac{\bar{r}+\delta_{m}}{\bar{p}_{m}}\bar{A}_{m}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{\epsilon_{m}}}{\gamma_{m}} = \frac{\bar{X}_{m}}{\bar{K}_{m}} \\
+	\implies &  \bar{K}_{m} = \gamma_{m}\bar{X}_{m} \left(\frac{\bar{r}+\delta_{m}}{\bar{p}_{m}}\bar{A}_{m}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{-\epsilon_{m}} \\
+	& \text{Summing both sides over $M$ yields:} \\
+	\implies &  \underbrace{\sum_{m=1}^{M} \bar{K}_{m}= \bar{K}^{s}}_{\text{By capital market clearing}} =\sum_{m=1}^{M} \gamma_{m}\bar{X}_{m} \left(\frac{\bar{r}+\delta_{m}}{\bar{p}_{m}}\bar{A}_{m}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{-\epsilon_{m}} \\
+	& \text{We can rearrange this equation to solve for $\bar{K}_{m}$ as:}\\
+	\implies & \bar{K}_{m} = \bar{K}^{s} -\sum_{k \neq=m} \gamma_{k}\bar{X}_{k} \left(\frac{\bar{r}+\delta_{k}}{\bar{p}_{k}}\bar{A}_{k}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}\\
+	& \text{Note that the above only holds for the correct $\bar{r}$.  }\\
+	& \text{To make sure it always holds (even outside eq'm) we'll substitute for $\bar{r}$} \\
+	& \text{using FOC for capital:} \\
+	\implies & \bar{K}_{m} = \bar{K}^{s} -\sum_{k \neq=m} \gamma_{k}\bar{X}_{k} \left(\frac{\overbrace{\bar{p}_{i}\left(\frac{\gamma_{i}\bar{X}_{i}}{\bar{K}_{i}}\right)^{\frac{1}{\epsilon_{i}}}A_{i,t}^{\frac{\epsilon_{i}-1}{\epsilon_{i}}}-\delta_{i}}^{=\bar{r}, \ \forall i}+\delta_{k}}{\bar{p}_{k}}\bar{A}_{k}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}\\
+	\end{split}
 	\end{equation}
-	This is a system of $M$ nonlinear equations that can be solved for $\bar{K}_{m}$ using a root finding algorithm.
+
+%	\begin{equation}
+%	\bar{K}_{m} = \bar{K}^{s} - \sum_{k \neq m} \gamma_{k}\bar{X}_{k}\left(\frac{\bar{p}_{m}\left(\frac{\gamma_{m}\bar{X}_{m}}{\bar{K}_{m}}\right)\bar{A}_{m}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{\bar{p}_{k}}\bar{A}_{k}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+%	\end{equation}
+
+	This is a system of $M$ nonlinear equations that can be solved for $\bar{K}_{m}$ using a root finding algorithm.  Note that the $i$ in the numerator within the parentheses on the right hand side of the equation can be any $i$, but it doesn't work if $i=k$.  The capital demands that result from this are consistent with market clearing and insure that the implied interest rate is the same across firms.  However, they these demands do not necessarily mean that the interest rate implied from these capital demands is the same interest rate that gave rise to the supply of capital used in the solution.  That will only be the case for the equilibrium value of $\bar{r}$.  
 	
 \item With $\bar{X}_{m}$ and prices, we can solve for the demand for labor from each industry.  We'll use the labor market clearing condition ($\sum_{m=1}^{M} \bar{EL}_{m}=\sum_{j=1}^{J}\sum_{s=1}^{S}e_{j,s} \bar{n}_{j,s}$) and the firm's FOC for labor together to find these demands.  Denoting the supply of labor as $\bar{L}^{s}=\sum_{j=1}^{J}\sum_{s=1}^{S} e_{j,s}\bar{n}_{j,s}$, we have:
 
 	\begin{equation}
-	\bar{EL}_{m} = \bar{L}^{s} - \sum_{k\neq m} (1- \gamma_{k})\bar{X}_{k}\left(\frac{\bar{p}_{m}\left(\frac{(1-\gamma_{m})\bar{X}_{m}}{\bar{EL}_{m}}\right)\bar{A}_{m}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{\bar{p}_{k}}\bar{A}_{k}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+	\begin{split}
+	& \bar{w} = \bar{p}_{m}\left(\frac{(1-\gamma_{m})\bar{X}_{m}}{\overline{EL}_{m}}\right)^{\frac{1}{\epsilon_{m}}}\bar{A}_{m}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}} \\
+	\implies & \frac{\left(\frac{\bar{w}}{\bar{p}_{m}}\bar{A}_{m}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{\epsilon_{m}}}{(1-\gamma_{m})} = \frac{\bar{X}_{m}}{\overline{EL}_{m}} \\
+	\implies &  \overline{EL}_{m} = (1-\gamma_{m})\bar{X}_{m} \left(\frac{\bar{w}}{\bar{p}_{m}}\bar{A}_{m}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{-\epsilon_{m}} \\
+	& \text{Summing both sides over $M$ yields:} \\
+	\implies &  \underbrace{\sum_{m=1}^{M} \overline{EL}_{m}= \bar{L}^{s}}_{\text{By labor market clearing}} =\sum_{m=1}^{M} (1-\gamma_{m})\bar{X}_{m} \left(\frac{\bar{w}}{\bar{p}_{m}}\bar{A}_{m}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{-\epsilon_{m}} \\
+	& \text{We can rearrange this equation to solve for $\overline{EL}_{m}$ as:}\\
+	\implies & \overline{EL}_{m} = \bar{L}^{s} -\sum_{k \neq=m} (1- \gamma_{k})\bar{X}_{k} \left(\frac{\bar{w}}{\bar{p}_{k}}\bar{A}_{k}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}\\
+	& \text{Note that the above only holds for the correct $\bar{w}$.  }\\
+	& \text{To make sure it always holds (even outside eq'm) we'll substitute for $\bar{w}$} \\
+	& \text{using FOC for labor:} \\
+	\implies & \overline{EL}_{m} = \bar{L}^{s} -\sum_{k \neq=m} (1- \gamma_{k})\bar{X}_{k} \left(\frac{\overbrace{\bar{p}_{i}\left(\frac{(1-\gamma_{i})\bar{X}_{i}}{\overline{EL}_{i}}\right)^{\frac{1}{\epsilon_{i}}}A_{i,t}^{\frac{\epsilon_{i}-1}{\epsilon_{i}}}}^{=\bar{w}, \ \forall i}}{\bar{p}_{k}}\bar{A}_{k}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}\\
+	\end{split}
 	\end{equation}
+
+%	\begin{equation}
+%	\bar{EL}_{m} = \bar{L}^{s} - \sum_{k\neq m} (1- \gamma_{k})\bar{X}_{k}\left(\frac{\bar{p}_{m}\left(\frac{(1-\gamma_{m})\bar{X}_{m}}{\bar{EL}_{m}}\right)\bar{A}_{m}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{\bar{p}_{k}}\bar{A}_{k}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+%	\end{equation}
 	This is a system of $M$ nonlinear equations that can be solved for $\bar{EL}_{m}$ using a root finding algorithm.
 	
 \item Use the demands for capital and labor found above in the FOC for a particular firm $m$ (can be any firm), this will imply and interest rate and wage rate.  Call these $r_{new}$ and $w_{new}$, respectively.  We have:
@@ -190,18 +223,48 @@ c_{i,j,s,t}  = \frac{\alpha_{i} \tilde{p}_{s,t}\tilde{c}_{j,s,t}}{p_{i,t}} + \ba
 	\item Alternatively, one can leverage the recursive nature of the problem.  In particular, since we know the steady state solution, we have $K_{m,T}$ for all $m$.  Thus we can find $I_{m,T-1} = K_{m,T} - (1\delta_{m})K_{m,T-1}$.  Then using the equations above, we can solve a system of $M$ equations and $M$ unknowns to find $X_{m,T-1}$.  We then repeat this for each period from $T-1$ back to the initial period.  This yields the time path of output demand, $X_{m,t}$ without having to solve a very large system of equations at once.
 	\end{itemize}
 
-\item With the time path for output demand, $X_{m,t}$, and prices, we can solve for the demand for capital from each industry in each period $t$.  We'll use the capital market clearing condition ($\sum_{m=1}^{M} K_{m,t}=\sum_{j=1}^{J}\sum_{s=1}^{S} b_{j,s,t}$) and the firm's FOC for capital together to find these demands.  Denoting the supply of capital as $K^{s}_{t}=\sum_{j=1}^{J}\sum_{s=1}^{S} b_{j,s,t}$, we have:
+\item With the time path for output demand, $X_{m,t}$, and prices, we can solve for the demand for capital from each industry in each period $t$.  We'll use the capital market clearing condition ($\sum_{m=1}^{M} K_{m,t}=\sum_{j=1}^{J}\sum_{s=1}^{S} b_{j,s,t}$) and the firm's FOC for capital together to find these demands.  Denoting the supply of capital as $K^{s}_{t}=\sum_{j=1}^{J}\sum_{s=1}^{S} b_{j,s,t}$, we can start with the firm's FOC for its choice of capital:
 
 	\begin{equation}
-	K_{m,t} = K^{s,t} - \sum_{k \neq m} \gamma_{k}X_{k,t}\left(\frac{p_{m,t}\left(\frac{\gamma_{m}X_{m,t}}{K_{m,t}}\right)A_{m,t}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{p_{k,t}}A_{k,t}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+	\begin{split}
+	& r_{t}+\delta_{m} = p_{m,t}\left(\frac{\gamma_{m}X_{m,t}}{K_{m,t}}\right)^{\frac{1}{\epsilon_{m}}}A_{m,t}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}} \\
+	\implies & \frac{\left(\frac{r_{t}+\delta_{m}}{p_{m,t}}A_{m,t}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{\epsilon_{m}}}{\gamma_{m}} = \frac{X_{m,t}}{K_{m,t}} \\
+	\implies &  K_{m,t} = \gamma_{m}X_{m,t} \left(\frac{r_{t}+\delta_{m}}{p_{m,t}}A_{m,t}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{-\epsilon_{m}} \\
+	& \text{Summing both sides over $M$ yields:} \\
+	\implies &  \underbrace{\sum_{m=1}^{M} K_{m,t}= K^{s}_{t}}_{\text{By capital market clearing}} =\sum_{m=1}^{M} \gamma_{m}X_{m,t} \left(\frac{r_{t}+\delta_{m}}{p_{m,t}}A_{m,t}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{-\epsilon_{m}} \\
+	& \text{We can rearrange this equation to solve for $K_{m,t}$ as:}\\
+	\implies & K_{m,t} = K^{s}_{t} -\sum_{k \neq=m} \gamma_{k}X_{k,t} \left(\frac{r_{t}+\delta_{k}}{p_{k,t}}A_{k,t}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}\\
+	& \text{Note that the above only holds for the correct $r_{t}$.  }\\
+	& \text{To make sure it always holds (even outside eq'm) we'll substitute for $r_{t}$} \\
+	& \text{using FOC for capital:} \\
+	\implies & K_{m,t} = K^{s}_{t} -\sum_{k \neq=m} \gamma_{k}X_{k,t} \left(\frac{\overbrace{p_{i,t}\left(\frac{\gamma_{i}X_{i,t}}{K_{i,t}}\right)^{\frac{1}{\epsilon_{i}}}A_{i,t}^{\frac{\epsilon_{i}-1}{\epsilon_{i}}}-\delta_{i}}^{=r_{t}, \ \forall i}+\delta_{k}}{p_{k,t}}A_{k,t}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}\\
+	\end{split}
 	\end{equation}
+	
 	For each year, $t$, this is a system of $M$ nonlinear equations that can be solved for $K_{m,t}$ using a root finding algorithm.
 	
 \item With the time path for output demand, $X_{m,t}$ and prices, we can solve for the demand for labor from each industry.  We'll use the labor market clearing condition ($\sum_{m=1}^{M} EL_{m,t}=\sum_{j=1}^{J}\sum_{s=1}^{S}e_{j,s} n_{j,s,t}$) and the firm's FOC for labor together to find these demands.  Denoting the supply of labor as $L^{s,t}=\sum_{j=1}^{J}\sum_{s=1}^{S} e_{j,s}n_{j,s,t}$, we have:
 
+
 	\begin{equation}
-	EL_{m,t} = L^{s,t} - \sum_{k\neq m} (1- \gamma_{k})X_{k,t}\left(\frac{p_{m,t}\left(\frac{(1-\gamma_{m})X_{m,t}}{EL_{m,t}}\right)A_{m,t}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{p_{k,t}}A_{k,t}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+	\begin{split}
+	& w_{t} = p_{m,t}\left(\frac{(1-\gamma_{m})X_{m,t}}{EL_{m,t}}\right)^{\frac{1}{\epsilon_{m}}}A_{m,t}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}} \\
+	\implies & \frac{\left(\frac{w_{t}}{p_{m,t}}A_{m,t}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{\epsilon_{m}}}{(1-\gamma_{m})} = \frac{X_{m,t}}{EL_{m,t}} \\
+	\implies &  EL_{m,t} =(1- \gamma_{m})X_{m,t} \left(\frac{w_{t}}{p_{m,t}}A_{m,t}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{-\epsilon_{m}} \\
+	& \text{Summing both sides over $M$ yields:} \\
+	\implies &  \underbrace{\sum_{m=1}^{M} EL_{m,t}= L^{s}_{t}}_{\text{By labor market clearing}} =\sum_{m=1}^{M} (1- \gamma_{m})X_{m,t} \left(\frac{w_{t}}{p_{m,t}}A_{m,t}^{\frac{1-\epsilon_{m}}{\epsilon_{m}}}\right)^{-\epsilon_{m}} \\
+	& \text{We can rearrange this equation to solve for $EL_{m,t}$ as:}\\
+	\implies & EL_{m,t} = L^{s}_{t} -\sum_{k \neq=m} (1-\gamma_{k})X_{k,t} \left(\frac{w_{t}}{p_{k,t}}A_{k,t}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}\\
+	& \text{Note that the above only holds for the correct $w_{t}$.  }\\
+	& \text{To make sure it always holds (even outside eq'm) we'll substitute for $w_{t}$} \\
+	& \text{using FOC for labor:} \\
+	\implies & EL_{m,t} = L^{s}_{t} -\sum_{k \neq=m} (1- \gamma_{k})X_{k,t} \left(\frac{\overbrace{p_{i,t}\left(\frac{(1-\gamma_{i})X_{i,t}}{EL_{i,t}}\right)^{\frac{1}{\epsilon_{i}}}A_{i,t}^{\frac{\epsilon_{i}-1}{\epsilon_{i}}}}^{=w_{t}, \ \forall i}}{p_{k,t}}A_{k,t}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}\\
+	\end{split}
 	\end{equation}
+
+%	\begin{equation}
+%	EL_{m,t} = L^{s,t} - \sum_{k\neq m} (1- \gamma_{k})X_{k,t}\left(\frac{p_{m,t}\left(\frac{(1-\gamma_{m})X_{m,t}}{EL_{m,t}}\right)A_{m,t}^{\frac{\epsilon_{m}-1}{\epsilon_{m}}}-\delta_{m}+\delta_{k}}{p_{k,t}}A_{k,t}^{\frac{1-\epsilon_{k}}{\epsilon_{k}}}\right)^{-\epsilon_{k}}
+%	\end{equation}
 	For each year, $t$, this is a system of $M$ nonlinear equations that can be solved for $EL_{m,t}$ using a root finding algorithm.
 	
 \item Use the demands for capital and labor found above in the FOC for a particular firm, this will imply and interest rate and wage rate in each period, $t$.  Call these $r_{new,t}$ and $w_{new,t}$, respectively.  We have:

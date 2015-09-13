@@ -199,6 +199,8 @@ def get_p(guesses, r, w):
 
     mask = p < 0.0
 
+    #print 'price error: ', error
+
     error[mask] = 1e14
 
     return error 
@@ -420,6 +422,7 @@ def solve_output(guesses,p_k,w,r,X_c):
     Inv = np.reshape(delta*get_k_demand(p_k,w,r,X),(1,M)) # investment demand - will differ not in SS
     errors = np.reshape(X_c  + np.dot(Inv,xi) - X,(M))
 
+    #print 'solve output errors; ', errors
     return errors
 
 def Steady_State(guesses):
@@ -434,7 +437,8 @@ def Steady_State(guesses):
 
     # find prices of consumption and capital goods
     p_guesses = np.ones(M)
-    p = opt.fsolve(get_p, p_guesses, args=(r, w), xtol=1e-9, col_deriv=1)
+    p = opt.fsolve(get_p, p_guesses, args=(r, w), xtol=1e-14, col_deriv=1)
+    p = p/p[0]
     p_c = get_p_c(p)
     p_tilde = get_p_tilde(p_c)
     p_k = np.dot(xi,p)
@@ -456,7 +460,7 @@ def Steady_State(guesses):
             guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
         else:
             guesses = np.append(k[:,(j-1)], n[:,(j-1)])
-        solutions = opt.fsolve(solve_hh, guesses, args=(r, w, p_c, p_tilde, j), xtol=1e-9, col_deriv=1)
+        solutions = opt.fsolve(solve_hh, guesses, args=(r, w, p_c, p_tilde, j), xtol=1e-11, col_deriv=1)
         #out = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1, full_output=1)
         #print'solution found flag', out[2], out[3]
         #solutions = out[0]
@@ -477,22 +481,28 @@ def Steady_State(guesses):
     # Find total demand for output from each sector from consumption
     X_c = np.dot(np.reshape(C,(1,I)),pi)
     guesses = X_c/I
-    x_sol = opt.fsolve(solve_output, guesses, args=(p_k, w, r, X_c), xtol=1e-9, col_deriv=1)
+    x_sol = opt.fsolve(solve_output, guesses, args=(p_k, w, r, X_c), xtol=1e-14, col_deriv=1)
 
     X = x_sol
+    #print 'Output by industry, ', X
 
     # find aggregate savings and labor supply
     K_s, K_constr = get_K(k)
     L_s = get_L(n)
-
+    #print 'factor supplies: ', K_s, L_s
 
     #### Need to solve for labor and capital demand from each industry
+    #K_d = gamma*X*(A**(1-epsilon))*((p/(p_k*(r+delta)))**(epsilon))
     K_d = get_k_demand(p_k, w, r, X)
     L_d = get_l_demand(p_k, w, r, K_d)
 
+    #print 'Capital demands: ', K_d
+    #print 'Labor demands: ', L_d
 
     # Find value of each firm V = DIV/r in SS
     V = (p*X - w*L_d - p_k*delta*K_d)/r
+    #V = p_k*K_d
+    print 'check V:', V.sum()-(p_k*K_d).sum()
 
     # Check labor and asset market clearing conditions
     error1 = K_s - V.sum()
@@ -516,10 +526,10 @@ def Steady_State(guesses):
     
 
 # Solve SS
-r_guess_init = 0.77
-w_guess_init = 1.03 
+r_guess_init = 0.97 #0.9 #0.746930316821
+w_guess_init = 1.03 #2.5 #1.53867680151
 guesses = [r_guess_init, w_guess_init]
-solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
+solutions = opt.fsolve(Steady_State, guesses, xtol=1e-12, col_deriv=1)
 #solutions = Steady_State(guesses)
 rss = solutions[0]
 wss = solutions[1]
@@ -528,7 +538,8 @@ print 'ss r, w: ', rss, wss
 
 # find prices of consumption and capital goods
 p_guesses = np.ones(M)
-p_ss = opt.fsolve(get_p, p_guesses, args=(rss, wss), xtol=1e-9, col_deriv=1)
+p_ss = opt.fsolve(get_p, p_guesses, args=(rss, wss), xtol=1e-14, col_deriv=1)
+p_ss = p_ss/p_ss[0]
 p_c_ss = get_p_c(p_ss)
 p_tilde_ss = get_p_tilde(p_c_ss)
 p_k_ss = np.dot(xi,p_ss)
@@ -550,7 +561,7 @@ for j in xrange(J):
     else:
         guesses = np.append(kss[:,(j-1)], nss[:,(j-1)])
     #solutions = opt.fsolve(solve_hh, guesses, args=(rss, wss, j), xtol=1e-9, col_deriv=1)
-    out = opt.fsolve(solve_hh, guesses, args=(rss, wss, p_c_ss, p_tilde_ss, j), xtol=1e-9, col_deriv=1, full_output=1)
+    out = opt.fsolve(solve_hh, guesses, args=(rss, wss, p_c_ss, p_tilde_ss, j), xtol=1e-11, col_deriv=1, full_output=1)
    # print'solution found flag', out[2], out[3]
     #print 'fsovle output: ', out[1]
     solutions = out[0]
@@ -574,7 +585,7 @@ C_ss = get_C(c_i_ss)
 # Find total demand for output from each sector from consumption
 X_c_ss = np.dot(np.reshape(C_ss,(1,I)),pi)
 guesses = X_c_ss/I
-x_sol = opt.fsolve(solve_output, guesses, args=(p_k_ss, wss, rss, X_c_ss), xtol=1e-9, col_deriv=1)
+x_sol = opt.fsolve(solve_output, guesses, args=(p_k_ss, wss, rss, X_c_ss), xtol=1e-14, col_deriv=1)
 X_ss = x_sol
 
 # find aggregate savings and labor supply

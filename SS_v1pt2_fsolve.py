@@ -315,7 +315,7 @@ def solve_hh(guesses, r, w, j):
     return list(error1.flatten()) + list(error2.flatten()) + list(error3.flatten()) 
 
 
-def Steady_State(guesses, mu):
+def Steady_State(guesses):
     '''
     Parameters: Steady state distribution of capital guess as array
                 size SxJ and labor supply array of SxJ rss
@@ -326,59 +326,50 @@ def Steady_State(guesses, mu):
     w = guesses[1]
     
     
-    dist = 10
-    iteration = 0
-    dist_vec = np.zeros(maxiter)
-    
     # Make initial guesses for capital and labor
     K_guess_init = np.ones((S, J)) * 0.05
     L_guess_init = np.ones((S, J)) * 0.3
     k = np.zeros((S,J)) # initialize k matrix
     n = np.zeros((S,J)) # initialize n matrix
     
-    while (dist > mindist_SS) and (iteration < maxiter):
-        
 
-        
-        for j in xrange(J):
-            # Solve the euler equations
-            if j == 0:
-                guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
-            else:
-                guesses = np.append(k[:,(j-1)], n[:,(j-1)])
-            solutions = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1)
-            #out = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1, full_output=1)
-            #print'solution found flag', out[2], out[3]
-            #solutions = out[0]
-            k[:,j] = solutions[:S].reshape(S)
-            n[:,j] = solutions[S:].reshape(S)
+    for j in xrange(J):
+        # Solve the euler equations
+        if j == 0:
+            guesses = np.append(K_guess_init[:,j], L_guess_init[:,j])
+        else:
+            guesses = np.append(k[:,(j-1)], n[:,(j-1)])
+        solutions = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1)
+        #out = opt.fsolve(solve_hh, guesses, args=(r, w, j), xtol=1e-9, col_deriv=1, full_output=1)
+        #print'solution found flag', out[2], out[3]
+        #solutions = out[0]
+        k[:,j] = solutions[:S].reshape(S)
+        n[:,j] = solutions[S:].reshape(S)
 
-        
-        K, K_constr = get_K(k)
-        L = get_L(n)
-        Y = get_Y(K, L)    
-        r_new = get_r(Y,K)
-        w_new = get_w(Y,L)
-        
-        print 'r, w: ', r,w
-        print 'r_new, w_new: ', r_new,w_new
-        
-        r = mu*r_new + (1-mu)*r # so if r low, get low save, so low capital stock, so high mpk, so r_new bigger
-        w = mu*w_new + (1-mu)*w
-
-        dist = np.array([perc_dif_func(r_new, r)]+[perc_dif_func(w_new, w)]).max()
-        
-        dist_vec[iteration] = dist
-        if iteration > 10:
-            if dist_vec[iteration] - dist_vec[iteration-1] > 0:
-                mu /= 2.0
-                print 'New value of mu:', mu
-        iteration += 1
-        print "Iteration: %02d" % iteration, " Distance: ", dist
-
- 
-    return [r, w]
     
+    K, K_constr = get_K(k)
+    L = get_L(n)
+    Y = get_Y(K, L)    
+    r_new = get_r(Y,K)
+    w_new = get_w(Y,L)
+    
+    print 'r, w: ', r,w
+    print 'r_new, w_new: ', r_new,w_new
+        
+    error1 = r_new - r
+    error2 = w_new - w
+    print 'errors: ', error1, error2
+    print 'r, rnew, w, wnew: ', r, r_new, w, w_new
+
+    # Check and punish violations
+    if r <= 0:
+        error1 += 1e9
+    #if r > 1:
+    #    error1 += 1e9
+    if w <= 0:
+        error2 += 1e9
+
+    return [error1, error2]
 
 # Make initial guesses for factor prices
 r_guess_init = 0.77
@@ -386,7 +377,7 @@ w_guess_init = 1.03
 guesses = [r_guess_init, w_guess_init]
 
 # Solve SS
-solutions = Steady_State(guesses, mu)
+solutions = opt.fsolve(Steady_State, guesses, xtol=1e-9, col_deriv=1)
 
 rss = solutions[0]
 wss = solutions[1]
