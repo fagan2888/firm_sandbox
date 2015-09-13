@@ -139,6 +139,22 @@ def foc_k(r,c):
     error = c[:-1]**-sigma-(1+r)*beta*(c[1:])**-sigma
     return error
 
+def mu_c(cvec,sigma):
+    return cvec**sigma
+
+def get_b_errors(beta, sigma, r, cvec, cmask):
+    '''
+
+    '''
+    cvec[cmask] = 10e6
+    mu_c0 = mu_c(cvec[:-1], sigma)
+    mu_c1 = mu_c(cvec[1:], sigma)
+    b_errors = (beta * (1+r)*mu_c0)-mu_c1
+    b_errors[cmask[:-1]] = 10e6
+    b_errors[cmask[1:]] = 10e6
+    print 'B: ',b_errors
+    return b_errors
+
 def savings_euler(savings_guess, r, w, p, minimum):
     '''
     Calculates the steady state savings vector using an fsolve
@@ -157,13 +173,8 @@ def savings_euler(savings_guess, r, w, p, minimum):
     n2 = np.zeros(S)
     n2[:-1] = nvec[1:]
     c, cmask = consumption(w, r, nvec, p, savings_guess, minimum)
-    error1 = foc_k(r,c)
-    #print cmask
-    #print error1
-    #error1[cmask[:-1]] = 10000
-    #print error1
-    #raw_input()
-    return error1
+    b_error_vec = get_b_errors(beta, sigma, r, c, cmask)
+    return b_error_vec
 
 def hh_ss_consumption(c, cum_p, prices):
     ss_good_1 = alpha[0]*((cum_p*c)/prices[0]+cbar[0])
