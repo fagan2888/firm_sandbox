@@ -16,6 +16,7 @@ Adding two firms:
 - 2.4_mktclear: change sol'n method in how r and w updated (try to do what attempting in 1.2)
 - 2.5_mktclear: increase number of industries and consumption goods to general numbers.  Works and produces same solution as 2.1 given same parameter values
 - 2.5_: 2.5_mktclear but with alternative solution that does not rely on market clearing conditions to converge.  Works and produces same solution as 2.5_mktclear given same parameter values.
+- 2.5_resid: 2.5 but using residuals from factor supplies to find factor demand and thus implied factor prices from residual industry.  Works and produces same solution as 2.5_mktclear and 2.5 given same parameter values.
 
 
 Adding dynamic firms:
@@ -23,7 +24,7 @@ Adding dynamic firms:
 - 3.1_mktclear: Extend 3.0 to have M firms (so similar to 2.5, but with dynamic firms).  Works. Note that with dynamic firms, it's important to normalize one of the prices to one (eg price of output from industry 1)
 - 3.1: is 3.1_mktclear with the alt sol'n that doesn't rely on market clearing.  Works and same answer are 3.1_mktclear.
 - 3.1_mktclear_load_params: Extend 3.1 to import params from Fullerton Rogers for I=17, M=19.  Works. Note that need to adjust starting value for interest rate downwards as number of periods of economic life of agents increases.  Success with S=5 to S=17.
-- 3.2_mktclear: dynamic firms with capital gains, dividend, and corporate income tax.  Adds gov't transfers (which are needed in "outer" GE loop of problem).  When taxes set to zero, rss and wss same as in 3.1_mktclear.
+- 3.2_mktclear: dynamic firms with capital gains, dividend, and corporate income tax.  Adds gov't transfers (which are needed in "outer" GE loop of problem).  When taxes set to zero, rss and wss same as in 3.1_mktclear - except that initial guess of T_H does matter - if guess zero, this is true, if guess not zero, then converges to 1e-31 (about zero), but wss not equal to 3.1_mktclear. Further is initial guess of T_H from 0, the more off wss is (though in each case markets clear, rc binds, euler errors small).
 
 Transition path:
 - TPI_v3 = Extend 3.0 to solve SS and transition path
