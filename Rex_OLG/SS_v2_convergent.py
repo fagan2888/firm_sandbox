@@ -142,7 +142,6 @@ def get_b_errors(r, cvec, cmask):
     b_errors = (beta * (1+r)*mu_c0)-mu_c1
     b_errors[cmask[:-1]] = 10e4
     b_errors[cmask[1:]] = 10e4
-    #print 'berrors: ',b_errors
     return b_errors
 
 def savings_euler(b_guess, r, w, p_comp, p_vec, minimum):
@@ -158,6 +157,7 @@ def savings_euler(b_guess, r, w, p_comp, p_vec, minimum):
     minimum - minimum bundle needed by law
     '''
     c, c_cstr = consumption(w, r, nvec, p_vec, p_comp, b_guess)
+    print c
     b_error_vec = get_b_errors(r, c, c_cstr)
     print 'b_error ', b_error_vec
     return b_error_vec
@@ -230,6 +230,18 @@ def calc_new_w(p, Y, L):
     w_new = p*(((1-gamma[0])*Y)/L)*A**((epsilon[0]-1)/1)
     return w_new
 
+def calc_k_res(k_supply, k_demand):
+    k_res = k_supply - np.sum(k_demand[1:])
+    if k_res <0:
+        k_res = .00001
+    return k_res
+
+def calc_l_res(l_supply, l_demand):
+    l_res = l_supply - np.sum(l_demand[1:])
+    if l_res <0:
+        l_res = .00001
+    return l_res
+
 def market_errors(rwvec, b_guess, nvec):
     '''
     Returns the capital and labor market clearing errors
@@ -237,8 +249,8 @@ def market_errors(rwvec, b_guess, nvec):
     '''
     r,w = rwvec
     if r+delta <=0 or w<= 0:
-        k_error = 9999.
-        l_error = 9999.
+        r_diff = 9999.
+        w_diff = 9999.
     else:
         p_vec = firm_price(r,w)
         p_comp = comp_price(p_vec)
@@ -248,12 +260,22 @@ def market_errors(rwvec, b_guess, nvec):
         #Problem here with the bvec
         C_demand = cm_opt.sum(axis = 1)
         Y_m = get_Y(C_demand, r, w)
+        Y_total = np.sum(Y_m)
         K_demand = get_K(Y_m, p_vec, p_comp, r, w)
         L_demand = get_L(K_demand, r, w)
-        k_error = np.sum(K_demand) - np.sum(bvec)
-        l_error = np.sum(L_demand) - np.sum(nvec)
-    market_errors = np.array((k_error, l_error))
-    return market_errors 
+        K_supply = np.sum(bvec)
+        L_supply = np.sum(nvec)
+        l_res = calc_k_res(K_supply, K_demand)
+        k_res = calc_l_res(L_supply, L_demand)
+        rnew = calc_new_r(p_comp, Y_total, k_res)
+        wnew = calc_new_w(p_comp, Y_total, l_res)
+        print 'new w', wnew
+        print 'new r', rnew
+        r_diff = abs(rnew - r)
+        w_diff = abs(wnew - w)
+        
+    market_errors = np.array((r_diff, w_diff))
+    return market_errors
 
 def ss_solve_convex(rw_init,nvec):
     error = 1
@@ -312,7 +334,7 @@ def ss_solve_fsolve(rw_init, b_guess, nvec):
     
 
 nvec = np.array((1.,1.,.2))
-rw_init = np.array(([.8,.6]))
+rw_init = np.array(([4,.8]))
 bvec_guess = np.array((.1,.2))
 r_ss, w_ss, prices_ss, com_p_ss, b_ss, c_ss, cm_ss, eul_ss, C_demand_ss,\
         Y_m_ss, K_demand_ss, L_demand_ss, SS_market_errors = \
