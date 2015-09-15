@@ -38,12 +38,12 @@ ______________________________________________________
 
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
-beta = 0.98 # discount rate
+beta = 0.99 # discount rate
 alpha = np.array([0.5,1-0.5]) # preference parameter - share of good i in composite consumption, shape =(I,), shares must sum to 1
-cbar = np.array([0.001, 0.001]) # min cons of each of I goods, shape =(I,)
-delta = .05
+cbar = np.array([0.00, 0.00]) # min cons of each of I goods, shape =(I,)
+delta = .005
 epsilon = np.array((.55, .45))
-gamma = np.array((.6, .5))
+gamma = np.array((.5, .5))
 lamb = .1
 A = 1.0 # Total factor productivity
 S = 3 # periods in life of hh
@@ -51,25 +51,6 @@ I = 2 # number of consumption goods
 M = 2 # number of production industries
 
 
-def lab_clear(L_demand, nvec):
-    '''
-    Checks the Capital market to see if it is cleared
-    Eq. 11.36 in Rick's write-up
-    Params
-    L_demand - Labor demand for firms
-    nvec - Labor supplied vector
-    '''
-    return np.sum(L_demand) - np.sum(nvec)
-
-def cap_clear(K_demand, bvec):
-    '''
-    Checks the Labor market to see if it is cleared
-    Eq. 11.35 in Rick's write-up
-    Params
-    K_demand - capital demand from firms
-    bvec - capital supplied vector from households
-    '''
-    return np.sum(K_demand) - np.sum(bvec)
 
 def firm_price(r,w):
     '''
@@ -126,18 +107,8 @@ def consumption(w,r,n,p_vec,p_comp,b):
     cmask = c < 0
     return c, cmask
 
-def foc_k(r,c):
-    '''
-    Returns the first order condition vector for capital
-    Params
-    w - wage guess
-    c - consumption vector
-    '''
-    error = c[:-1]**-sigma-(1+r)*beta*(c[1:])**-sigma
-    return error
 
 def mu_c(cvec):
-    print cvec
     return cvec**sigma
 
 def get_cb(r, w, b_guess, p_vec, p_comp, nvec):
@@ -168,7 +139,7 @@ def get_b_errors(r, cvec, cmask):
     cvec[cmask] = 9999.
     mu_c0 = mu_c(cvec[:-1])
     mu_c1 = mu_c(cvec[1:])
-    b_errors = (beta * (1+r)*mu_c1)-mu_c0
+    b_errors = (beta * (1+r)*mu_c0)-mu_c1
     b_errors[cmask[:-1]] = 10e4
     b_errors[cmask[1:]] = 10e4
     #print 'berrors: ',b_errors
@@ -187,10 +158,8 @@ def savings_euler(b_guess, r, w, p_comp, p_vec, minimum):
     minimum - minimum bundle needed by law
     '''
     c, c_cstr = consumption(w, r, nvec, p_vec, p_comp, b_guess)
-    print 'c', c, c_cstr
     b_error_vec = get_b_errors(r, c, c_cstr)
     print 'b_error ', b_error_vec
-    raw_input()
     return b_error_vec
 
 def hh_ss_consumption(c, cum_p, prices):
@@ -343,9 +312,17 @@ def ss_solve_fsolve(rw_init, b_guess, nvec):
     
 
 nvec = np.array((1.,1.,.2))
-rw_init = np.array(([2.8,.6]))
-bvec_guess = np.array((.2,.3))
+rw_init = np.array(([.8,.6]))
+bvec_guess = np.array((.1,.2))
 r_ss, w_ss, prices_ss, com_p_ss, b_ss, c_ss, cm_ss, eul_ss, C_demand_ss,\
         Y_m_ss, K_demand_ss, L_demand_ss, SS_market_errors = \
         ss_solve_fsolve(rw_init, bvec_guess, nvec)
-print eul_ss
+print 'ss r', r_ss
+print 'ss w', w_ss
+print 'ss prices', prices_ss
+print 'composite p', com_p_ss
+print 'b_ss', b_ss
+print 'c', c_ss
+print 'cm', cm_ss
+print 'market errors', SS_market_errors
+print 'euler errors', eul_ss
