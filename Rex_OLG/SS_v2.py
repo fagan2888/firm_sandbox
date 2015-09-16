@@ -1,6 +1,10 @@
 '''
 Author: Rex McArthur
+<<<<<<< HEAD
+Last updated: 08/13/2015
+=======
 Last updated: 09/01/2015
+>>>>>>> 52ae66361f791a6b9950efae8863aec10fdb47da
 
 Calculates Steady state OLG model with S age cohorts, J types, 2 static firms
 
@@ -8,8 +12,7 @@ Calculates Steady state OLG model with S age cohorts, J types, 2 static firms
 #Packages
 import numpy as np
 import scipy.optimize as opt
-import time
-
+import time 
 '''
 Set up
 ______________________________________________________
@@ -145,7 +148,7 @@ def get_K(k):
     Returns:    Aggregate capital
     '''
     K_constr = False
-    K = np.sum(weights*k)
+    K = np.sum(k)
     if K <= 0:
         print 'b matrix and/or parameters resulted in K<=0'
         K_constr = True
@@ -217,12 +220,16 @@ def steady_state(guesses):
     k = np.zeros((S-1, J))
     n = np.zeros((S, J))
     c = np.zeros((S, J))
+    guessvec = np.zeros(2*S-1)
     #TODO Here you could recursively make the previous problem be the new guess 
     #See Jason's code if you don't get it
     for j in xrange(J):
-        guesses = np.append(k_guess[:,j], n_guess[:,j])
-        solutions = optimize.fsolve(solve_house, guesses, args = (r, w,
+        guessvec = np.zeros((2*S-1))
+        guessvec[:S] = n_guess[:]
+        guessvec[S:] = k_guess[:]
+        solutions = opt.fsolve(solve_house, guessevec, args = (r, w,
             p_c1, p_c2, p_tilde, 1), xtol = 1e-9, col_deriv = 1)
+        raw_input('Hello')
         n[:,j]=solutions[:S].reshape(S)
         k[:,j] = solutions[S:].reshape(S)
         c[:,j] = get_cons(w,r,n[:,j].reshape(S,1), k[:,j].reshape(S,1), p_c, p_tilde, j).reshape(S)

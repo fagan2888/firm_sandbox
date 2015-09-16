@@ -1,6 +1,6 @@
 '''
 Author: Rex McArthur
-Last updated: 09/08/2015
+Last updated: 09/03/2015
 
 Calculates Steady state OLG model with 3 age cohorts, 2 static firms
 
@@ -38,12 +38,12 @@ ______________________________________________________
 
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
-beta = 0.98 # discount rate
+beta = 0.99 # discount rate
 alpha = np.array([0.5,1-0.5]) # preference parameter - share of good i in composite consumption, shape =(I,), shares must sum to 1
-cbar = np.array([0.001, 0.001]) # min cons of each of I goods, shape =(I,)
-delta = .05
+cbar = np.array([0.00, 0.00]) # min cons of each of I goods, shape =(I,)
+delta = .005
 epsilon = np.array((.55, .45))
-gamma = np.array((.6, .5))
+gamma = np.array((.5, .5))
 lamb = .1
 A = 1.0 # Total factor productivity
 S = 3 # periods in life of hh
@@ -51,25 +51,6 @@ I = 2 # number of consumption goods
 M = 2 # number of production industries
 
 
-def lab_clear(L_demand, nvec):
-    '''
-    Checks the Capital market to see if it is cleared
-    Eq. 11.36 in Rick's write-up
-    Params
-    L_demand - Labor demand for firms
-    nvec - Labor supplied vector
-    '''
-    return np.sum(L_demand) - np.sum(nvec)
-
-def cap_clear(K_demand, bvec):
-    '''
-    Checks the Labor market to see if it is cleared
-    Eq. 11.35 in Rick's write-up
-    Params
-    K_demand - capital demand from firms
-    bvec - capital supplied vector from households
-    '''
-    return np.sum(K_demand) - np.sum(bvec)
 
 def firm_price(r,w):
     '''
@@ -80,7 +61,7 @@ def firm_price(r,w):
     r - rate guess
     w - wage guess
     '''
-    P = (1/A)*(gamma*(r+delta)**(1-epsilon)+
+    P =  (1/A)*(gamma*(r+delta)**(1-epsilon)+
             (1-gamma)*w**(1-epsilon))**(1/(1-epsilon))
     return P
 
@@ -92,7 +73,7 @@ def comp_price(price_vec):
     Params
     price_vec - a vector of the two prices
     '''
-    #TODO Change this to work for more than two firms
+
     return ((price_vec[0]/alpha[0])**alpha[0])*(price_vec[1]/(alpha[1]))**(alpha[1])
 
 def min_consump(p):
@@ -104,7 +85,7 @@ def min_consump(p):
     '''
     return np.sum(cbar*p)
 
-def consumption(w,r,n,p,b,minimum):
+def consumption(w,r,n,p_vec,p_comp,b):
     '''
     Returns S length Consumption vector
     Eq. 11.45 in Rick's write up
@@ -119,27 +100,51 @@ def consumption(w,r,n,p,b,minimum):
     '''
     b1 = np.zeros(S)
     b2 = np.zeros(S)
-    b3 = np.zeros(S)
     b1[1:]  = b
     b2[:-1] = b
-    b3[:-2] = b[1:]
-    c = (((1/p) * ((1+r) * b1 + w * n - b2 - minimum)))
+    minimum = min_consump(p_vec)
+    c = (((1/p_comp) * ((1+r) * b1 + w * n - b2 - minimum)))
     cmask = c < 0
-    if cmask.any() == True:
-        print 'ERROR: consumption < 0'
     return c, cmask
 
-def foc_k(r,c):
-    '''
-    Returns the first order condition vector for capital
-    Params
-    w - wage guess
-    c - consumption vector
-    '''
-    error = c[:-1]**-sigma-(1+r)*beta*(c[1:])**-sigma
-    return error
 
-def savings_euler(savings_guess, r, w, p, minimum):
+def mu_c(cvec):
+    return cvec**sigma
+
+def get_cb(r, w, b_guess, p_vec, p_comp, nvec):
+    '''
+    Generates vectors for individual savings, composite consumption,
+    industry specific consumption, constraint vectors, and Euler errors
+    given r, w, p_comp, p_vec.
+    '''
+
+    bvec = opt.fsolve(savings_euler, b_guess, args =(r, w, p_comp, p_vec, nvec))
+    cvec, c_cstr = consumption(w,r,nvec, p_vec, p_comp, bvec)
+    cm_opt, cm_cstr = get_cm_optimal(cvec, p_comp, p_vec)
+    eul_vec = get_b_errors(r, cvec, c_cstr)
+    return bvec, cvec, c_cstr, cm_opt, cm_cstr, eul_vec
+
+def get_cm_optimal(cvec, p_comp, p_vec):
+    c1vec = ((alpha[0] * p_comp * cvec)/p_vec[0])+ cbar[0]
+    c2vec = ((alpha[1] * p_comp * cvec)/p_vec[1])+ cbar[1]
+    cm_opt = np.vstack((c1vec, c2vec)) 
+    cm_cstr = cm_opt <= 0
+    return cm_opt, cm_cstr
+
+
+def get_b_errors(r, cvec, cmask):
+    '''
+
+    '''
+    cvec[cmask] = 9999.
+    mu_c0 = mu_c(cvec[:-1])
+    mu_c1 = mu_c(cvec[1:])
+    b_errors = (beta * (1+r)*mu_c0)-mu_c1
+    b_errors[cmask[:-1]] = 10e4
+    b_errors[cmask[1:]] = 10e4
+    return b_errors
+
+def savings_euler(b_guess, r, w, p_comp, p_vec, minimum):
     '''
     Calculates the steady state savings vector using an fsolve
     Eq. 11.43 and 11.44 in Rick's write up
@@ -151,20 +156,16 @@ def savings_euler(savings_guess, r, w, p, minimum):
     p - current composite price calculation
     minimum - minimum bundle needed by law
     '''
-    #TODO Make this work with a bequest motive, so they can save in the last period
-    #Also make it work with the labor correctly after endogonizing
-    n1 = np.copy(nvec)
-    n2 = np.zeros(S)
-    n2[:-1] = nvec[1:]
-    c, cmask = consumption(w, r, nvec, p, savings_guess, minimum)
-    c[c<0] = .001
-    error1 = foc_k(r,c)
-    error1[cmask[:-1]] = 100000
-    if cmask[-1] == True:
-        error1 = [10000,100000]
-    return error1
+    c, c_cstr = consumption(w, r, nvec, p_vec, p_comp, b_guess)
+    print c
+    b_error_vec = get_b_errors(r, c, c_cstr)
+    print 'b_error ', b_error_vec
+    return b_error_vec
 
 def hh_ss_consumption(c, cum_p, prices):
+    '''
+
+    '''
     ss_good_1 = alpha[0]*((cum_p*c)/prices[0]+cbar[0])
     ss_good_2 = alpha[1]*((cum_p*c)/prices[1]+cbar[1])
     return np.array([ss_good_1, ss_good_2])
@@ -204,7 +205,7 @@ def get_K(Y, pbar, com_p, r, w):
 
 def get_L(K, r, w):
     '''
-    Returns the Capital Demand of the firms
+    Returns the Labor Demand of the firms
     Params
     r - current rate guess
     w - current wage guess
@@ -230,22 +231,51 @@ def calc_new_w(p, Y, L):
     return w_new
 
 def calc_k_res(k_supply, k_demand):
-    '''
-    Calculates the residual capital used in calculating the new_r and new_w
-    '''
     k_res = k_supply - np.sum(k_demand[1:])
     if k_res <0:
-        k_res = .000001
+        k_res = .00001
     return k_res
 
 def calc_l_res(l_supply, l_demand):
-    '''
-    Calculates the residual labor used in calculating the new_r and new_w
-    '''
     l_res = l_supply - np.sum(l_demand[1:])
     if l_res <0:
-        l_res = .000001
+        l_res = .00001
     return l_res
+
+def market_errors(rwvec, b_guess, nvec):
+    '''
+    Returns the capital and labor market clearing errors
+    given r,w
+    '''
+    r,w = rwvec
+    if r+delta <=0 or w<= 0:
+        r_diff = 9999.
+        w_diff = 9999.
+    else:
+        p_vec = firm_price(r,w)
+        p_comp = comp_price(p_vec)
+        bvec, cvec, c_cstr, cm_opt, c_opt_cstr, eulvec = \
+            get_cb(r, w, b_guess, p_vec, p_comp, nvec)
+
+        #Problem here with the bvec
+        C_demand = cm_opt.sum(axis = 1)
+        Y_m = get_Y(C_demand, r, w)
+        Y_total = np.sum(Y_m)
+        K_demand = get_K(Y_m, p_vec, p_comp, r, w)
+        L_demand = get_L(K_demand, r, w)
+        K_supply = np.sum(bvec)
+        L_supply = np.sum(nvec)
+        l_res = calc_k_res(K_supply, K_demand)
+        k_res = calc_l_res(L_supply, L_demand)
+        rnew = calc_new_r(p_comp, Y_total, k_res)
+        wnew = calc_new_w(p_comp, Y_total, l_res)
+        print 'new w', wnew
+        print 'new r', rnew
+        r_diff = abs(rnew - r)
+        w_diff = abs(wnew - w)
+        
+    market_errors = np.array((r_diff, w_diff))
+    return market_errors
 
 def ss_solve_convex(rw_init,nvec):
     error = 1
@@ -264,69 +294,57 @@ def ss_solve_convex(rw_init,nvec):
         Ybar = get_Y(Cbar, r_guess, w_guess)
         K_demand = get_K(Ybar, prices, com_price, r_guess, w_guess)
         L_demand = get_L(K_demand, r_guess, w_guess)
-        ###HERE IS THE BREAK TO FIND NEWR
-        K_supply = np.sum(newb)
-        L_supply = np.sum(nvec)
-        k_res = calc_k_res(np.sum(newb), K_demand)
-        l_res = calc_l_res(np.sum(nvec), L_demand)
         L_mkt_clear = lab_clear(L_demand, nvec)
         K_mkt_clear = cap_clear(K_demand, newb)
         print 'Market Clearing conditions '
         print 'Labor: ', L_mkt_clear
         print 'Capital: ', K_mkt_clear
-        r_new = calc_new_r(prices[0], Ybar[0], k_res)
-        w_new = calc_new_w(prices[0], Ybar[0], l_res)
+        #print 'prices: {}, Consumption: {}, K: {}'.format(prices, Ybar, K_demand)
+        r_new = calc_new_r(prices[0], Ybar[0], K_demand[0])
+        w_new = calc_new_w(prices[0], Ybar[0], L_demand[0])
         #print 'w', w_new
         #print 'r', r_new
         diff = np.array(([abs(r_guess-r_new),abs(w_guess-w_new)]))
         error = np.max(diff)
         print error, '\n'
         r_guess = lamb*r_new + (1-lamb)*r_guess
-        if r_guess <0:
-            r_guess = delta+10e-9
         w_guess = lamb*w_new + (1-lamb)*w_guess
-        if w_guess <0:
-            w_guess = 10e-9
     return np.array(([r_new, w_new]))
+        
 
-def ss_solve_fsolve(rw_init, nvec):
-    r_guess = rw_init[0]
-    w_guess = rw_init[1]
-    diff = [1.,1.]
-    if r_guess < 0:
-        diff[0] = 1e14
-    elif w_guess < 0:
-        diff[1] = 1e14
-    else:
-        print 'rw: ', rw_init
-        prices = firm_price(r_guess,w_guess)
-        minimum = min_consump(prices)
-        com_price = comp_price(prices)
-        guessvec = np.array((.2,.3))
-        newb = opt.fsolve(savings_euler, guessvec, args = (r_guess, w_guess, com_price, minimum))
-        print newb
-        c_guess, cmask = consumption(w_guess, r_guess, nvec, com_price, newb, minimum)
-        ss_consump = hh_ss_consumption(c_guess, com_price, prices)
-        #print ss_consump
-        Cbar = agg_consump(ss_consump)
-        Ybar = get_Y(Cbar, r_guess, w_guess)
-        K_demand = get_K(Ybar, prices, com_price, r_guess, w_guess)
-        L_demand = get_L(K_demand, r_guess, w_guess)
-        L_mkt_clear = lab_clear(L_demand, nvec)
-        K_mkt_clear = cap_clear(K_demand, newb)
-        k_res = calc_k_res(np.sum(newb), K_demand)
-        l_res = calc_l_res(np.sum(nvec), L_demand)
-        print 'Market Clearing conditions '
-        print 'Labor: ', L_mkt_clear
-        print 'Capital: ', K_mkt_clear
-        #print 'prices: {}, Consumption: {}, K: {}'.format(prices, Ybar, K_demand)
-        r_new = calc_new_r(prices[0], Ybar[0], k_res)
-        w_new = calc_new_w(prices[0], Ybar[0], l_res)
-        diff = [abs(r_guess-r_new),abs(w_guess-w_new)]
-    return diff
+def ss_solve_fsolve(rw_init, b_guess, nvec):
+    rw_ss = opt.fsolve(market_errors, rw_init, args=(b_guess, nvec))
+    r_ss, w_ss = rw_ss
+    prices_ss = firm_price(r_ss,w_ss)
+    minimum_ss = min_consump(prices_ss)
+    com_price_ss = comp_price(prices_ss)
+    guessvec = np.array([.35,.15])
+    b_ss, c_ss, c_cstr, cm_opt_ss, cm_opt_cstr, euler_error_ss = \
+            get_cb(r_ss, w_ss, b_guess, prices_ss, com_price_ss, nvec)
+    C_demand_ss = cm_opt_ss.sum(axis = 1)
+    Y_m_ss = get_Y(C_demand_ss, r_ss, w_ss)
+    K_demand_ss = get_K(Y_m_ss, prices_ss, com_price_ss, r_ss, w_ss)
+    L_demand_ss = get_L(K_demand_ss, r_ss, w_ss)
+    k_error_ss = np.sum(K_demand_ss) - np.sum(b_ss)
+    l_error_ss = np.sum(L_demand_ss) - np.sum(nvec)
+    SS_market_errors = np.array([k_error_ss, l_error_ss])
+
+    return (r_ss, w_ss, prices_ss, com_price_ss, b_ss, c_ss, cm_opt_ss, euler_error_ss,
+            C_demand_ss, Y_m_ss, K_demand_ss, L_demand_ss, SS_market_errors)
+    
 
 nvec = np.array((1.,1.,.2))
-rw = np.array(([.3,.6]))
-#print ss_solve_convex(rw, nvec)
-x = opt.fsolve(ss_solve_fsolve, rw, args = (nvec))
-print x
+rw_init = np.array(([4,.8]))
+bvec_guess = np.array((.1,.2))
+r_ss, w_ss, prices_ss, com_p_ss, b_ss, c_ss, cm_ss, eul_ss, C_demand_ss,\
+        Y_m_ss, K_demand_ss, L_demand_ss, SS_market_errors = \
+        ss_solve_fsolve(rw_init, bvec_guess, nvec)
+print 'ss r', r_ss
+print 'ss w', w_ss
+print 'ss prices', prices_ss
+print 'composite p', com_p_ss
+print 'b_ss', b_ss
+print 'c', c_ss
+print 'cm', cm_ss
+print 'market errors', SS_market_errors
+print 'euler errors', eul_ss
