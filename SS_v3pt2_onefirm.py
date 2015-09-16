@@ -67,27 +67,17 @@ TPImindist   = Cut-off distance between iterations for TPI
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
 beta = 0.98 # discount rate
-alpha = np.array([0.29, 0.2, (1-0.2-0.29)]) # preference parameter - share of good i in composite consumption, shape =(I,), shares must sum to 1
-#alpha = 0.29 # preference parameter - share of good 1 in composite consumption
-cbar = np.array([0.001, 0.002, 0.000]) # min cons of each of I goods, shape =(I,)
-#delta = np.array([0.1, 0.12, 0.15, 0.11]) # depreciation rate, shape =(M,)
-delta = np.array([0.1, 0.1, 0.1, 0.1])
-#delta = np.array([0.1, 0.1]) # depreciation rate, shape =(M,)
-#delta = 0.1 # depreciation rate
+alpha = 1.0 # preference parameter - share of good i in composite consumption, shape =(I,), shares must sum to 1
+cbar = 0.00
+delta = 0.1
 A = 1.0 # Total factor productivity
 
-#gamma = np.array([0.3, 0.25, 0.4, 0.33]) # capital's share of output, shape =(M,)
-gamma = np.array([0.3, 0.3, 0.3, 0.3]) # capital's share of output, shape =(M,)
-#gamma = np.array([0.3, 0.3])
-#gamma = 0.3 # capital's share of output
-xi = np.array([[0.2, 0.5, 0.2, 0.1],[0.0, 0.2, 0.8, 0.0], [0.4, 0.2, 0.2, 0.2], [0.3, 0.3, 0.1, 0.3] ]) # fixed coeff input-output matrix, shape =(M,M)
-#xi = np.array([[0.2, 0.8],[0.3, 0.7]]) 
-pi = np.array([[0.2, 0.3, 0.3, 0.2],[0.1, 0.8, 0.1, 0.0],[0.25, 0.25, 0.25, 0.25]]) # fixed coeff pce-bridge matrix relating output and cons goods, shape =(I,M)
-#pi = np.array([[1.0, 0.0],[0.0, 1.0]]) # fixed coeff pce-bridge matrix relating output and cons goods, shape =(I,M)
-#epsilon = np.array([0.55, 0.6, 0.62, 0.6]) # elasticity of substitution between capital and labor, shape =(M,)
-epsilon = np.array([0.6, 0.6, 0.6, 0.6])
-#epsilon = np.array([0.6, 0.6])
-#epsilon = 0.6 # elasticity of substitution between capital and labor
+
+gamma = 0.3
+xi = 1.0
+pi = 1.0 # fixed coeff pce-bridge matrix relating output and cons goods, shape =(I,M)
+epsilon = 0.6
+
 nu = 2.0 # elasticity of labor supply 
 chi_n = 0.5 #utility weight, disutility of labor
 chi_b = 0.2 #utility weight, warm glow bequest motive
@@ -96,8 +86,8 @@ e = [0.5, 1.0, 1.2, 1.7] # effective labor units for the J types
 #e = [1.0, 1.0, 1.0, 1.0] # effective labor units for the J types
 S = 5 # periods in life of hh
 J = 4 # number of lifetime income groups
-I = 3 # number of consumption goods
-M = 4 # number of production industries
+I = 1 # number of consumption goods
+M = 1 # number of production industries
 surv_rate = np.array([0.99, 0.98, 0.6, 0.4, 0.0]) # probability of surviving to next period
 #surv_rate = np.array([1.0, 1.0, 1.0, 1.0, 0.0]) # probability of surviving to next period
 mort_rate = 1.0-surv_rate # probability of dying at the end of current period
@@ -173,7 +163,7 @@ def solve_p(guesses, r):
     '''
     p = guesses
 
-    p_k = np.dot(xi,p)
+    p_k = p
 
     q = get_q(p_k,r)
 
@@ -251,7 +241,7 @@ def get_C(c_i):
 
     Returns:    Aggregate consumption
     '''
-    C = (np.tile(weights,(I,1,1))*c_i).sum(2).sum(1)    
+    C = c_i.sum()    
 
     return C
 
@@ -277,7 +267,7 @@ def get_p(guesses, r, w,Z):
 
     p = guesses 
 
-    p_k = np.dot(xi,p)
+    p_k = p
 
     q = get_q(p_k,r)
 
@@ -323,7 +313,7 @@ def get_p_c(p):
 
     Returns: p_c
     '''
-    p_c = np.dot(pi,p)
+    p_c = p
     return p_c
     
 def get_p_tilde(p_c):
@@ -391,7 +381,7 @@ def get_cons(w, r, n, k, bq, p_c, p_tilde, T_H, j):
     k0[1:,0] = k[:-1,0] # capital start period with
 
     #output = (((1+((1-tau_d[0])*r))*k0) + w*n*e[j] - k + bq + (T_H/weights.sum()) - ((p_c*cbar).sum()))/p_tilde
-    output = ((((1+r))*k0) + w*n*e[j] - k + bq + (T_H/weights.sum()) - ((p_c*cbar).sum()))/p_tilde
+    output = ((((1+r))*k0) + w*n*e[j] - k + bq + (T_H/weights.sum()) )/p_tilde
 
     #print ' transfer used for consumption, ', T_H
     #print 'print diff in cons w and w/o transfer: ', np.absolute((((1+((1-tau_d[0])*r))*k0) + w*n*e[j] - k + bq + (T_H/weights.sum()) - ((p_c*cbar).sum()))/p_tilde -(((1+((1-tau_d[0])*r))*k0) + w*n*e[j] - k + bq - ((p_c*cbar).sum()))/p_tilde).max()
@@ -521,8 +511,8 @@ def solve_hh(guesses, r, w, p_c, p_tilde, T_H, j):
 
 def solve_output(guesses,p_k,w,r,X_c):
     X = guesses
-    Inv = np.reshape(delta*get_k_demand(p_k,w,r,X),(1,M)) # investment demand - will differ outside of the SS
-    errors = np.reshape(X_c  + np.dot(Inv,xi) - X,(M))
+    Inv = delta*get_k_demand(p_k,w,r,X) # investment demand - will differ outside of the SS
+    errors = X_c  + Inv - X
 
     return errors
 
@@ -544,15 +534,10 @@ def Steady_State(guesses):
     #print 'checking Z', Z
 
     # find prices of consumption and capital goods
-    p_guesses = np.ones(M)
-    p = opt.fsolve(get_p, p_guesses, args=(r, w, Z), xtol=1e-9, col_deriv=1)
-    #p = opt.fsolve(solve_p, p_guesses, args=(r), xtol=1e-9, col_deriv=1)
-    #print 'checking p solvers', p-p2
-    #print ' checking prices', p
-    p = p/p[0]
-    p_c = get_p_c(p)
-    p_tilde = get_p_tilde(p_c)
-    p_k = np.dot(xi,p)
+    p = 1.0
+    p_c = p
+    p_tilde = p
+    p_k = p
 
 
 
@@ -582,8 +567,7 @@ def Steady_State(guesses):
         bq = get_dist_bq(BQ, j).reshape(S,1)
         c[:,j] = get_cons(w, r, n[:,j].reshape(S,1), k[:,j].reshape(S,1), bq, p_c, p_tilde, T_H, j).reshape(S)
 
-    c_i = ((p_tilde*np.tile(c,(I,1,1))*np.tile(np.reshape(alpha,(I,1,1)),(1,S,J)))/np.tile(np.reshape(p_c,(I,1,1)),(1,S,J)) 
-                + np.tile(np.reshape(cbar,(I,1,1)),(1,S,J)))
+    c_i = c
     #print 'c_i', c_i
 
     # Find total consumption of each good
@@ -591,7 +575,7 @@ def Steady_State(guesses):
     #print 'total cons by good: ', C
 
     # Find total demand for output from each sector from consumption
-    X_c = np.dot(np.reshape(C,(1,I)),pi)
+    X_c = C
     guesses = X_c/I
     x_sol = opt.fsolve(solve_output, guesses, args=(p_k, w, r, X_c), xtol=1e-9, col_deriv=1)
 
@@ -616,6 +600,7 @@ def Steady_State(guesses):
 
     # Find total taxes paid
     firm_taxes = tau_b*(p*X - w*L_d - delta*p_k*K_d) 
+    print 'firm taxes: ', firm_taxes
     indiv_taxes = tau_d[0]*r*K_s
     #print 'diff in firm taxes due to delta_tau: ', (tau_b*(p*X-w*L_d) - tau_b*(1-delta_tau)*delta*p_k*K_d)-(tau_b*(p*X-w*L_d) - tau_b*(1-delta)*delta*p_k*K_d)
 
@@ -681,9 +666,9 @@ def Steady_State(guesses):
     
 
 # Solve SS
-r_guess_init = 0.97 #0.9 #0.746930316821
+r_guess_init = 0.2 #0.9 #0.746930316821
 w_guess_init = 1.03 #2.5 #1.53867680151
-T_H_guess_init = 0.1 #0.01  # total transfers, equal total tax rev here, tot pop here =1 so total equals per capita
+T_H_guess_init = 0.5 #0.01  # total transfers, equal total tax rev here, tot pop here =1 so total equals per capita
 guesses = [r_guess_init, w_guess_init, T_H_guess_init]
 solutions = opt.fsolve(Steady_State, guesses, xtol=1e-12, col_deriv=1)
 #solutions = Steady_State(guesses)
