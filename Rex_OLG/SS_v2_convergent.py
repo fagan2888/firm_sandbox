@@ -38,15 +38,15 @@ ______________________________________________________
 
 # Parameters
 sigma = 1.9 # coeff of relative risk aversion for hh
-beta = 0.99 # discount rate
+beta = 0.98 # discount rate
 alpha = np.array([0.5,1-0.5]) # preference parameter - share of good i in composite consumption, shape =(I,), shares must sum to 1
 cbar = np.array([0.00, 0.00]) # min cons of each of I goods, shape =(I,)
-delta = .005
+delta = .1
 epsilon = np.array((.55, .45))
 gamma = np.array((.5, .5))
 lamb = .1
 A = 1.0 # Total factor productivity
-S = 4 # periods in life of hh
+S = 80 # periods in life of hh
 I = 2 # number of consumption goods
 M = 2 # number of production industries
 nvec = np.array((1.,1.,1.,.2, ))
@@ -274,6 +274,17 @@ def market_errors(rwvec, b_guess, nvec):
         print 'new r', rnew
         r_diff = abs(rnew - r)
         w_diff = abs(wnew - w)
+
+   
+    C_demand_ss = cm_opt_ss.sum(axis = 1)
+    Y_m_ss = get_Y(C_demand_ss, r_ss, w_ss)
+    K_demand_ss = get_K(Y_m_ss, prices_ss, com_price_ss, r_ss, w_ss)
+    L_demand_ss = get_L(K_demand_ss, r_ss, w_ss)
+    k_error_ss = np.sum(K_demand_ss) - np.sum(b_ss)
+    l_error_ss = np.sum(L_demand_ss) - np.sum(nvec)
+    SS_market_errors = np.array([k_error_ss, l_error_ss])
+
+
         
     market_errors = np.array((r_diff, w_diff))
     return market_errors
@@ -286,7 +297,7 @@ def ss_solve_convex(rw_init,nvec):
         prices = firm_price(r_guess,w_guess)
         minimum = min_consump(prices)
         com_price = comp_price(prices)
-        guessvec = np.array((.2,.3))
+        guessvec = np.ones(S-1)*0.01
         newb = opt.fsolve(savings_euler, guessvec, args = (r_guess, w_guess, com_price, minimum))
         c_guess, cmask = consumption(w_guess, r_guess, nvec, com_price, newb, minimum)
         ss_consump = hh_ss_consumption(c_guess, com_price, prices)
@@ -319,7 +330,6 @@ def ss_solve_fsolve(rw_init, b_guess, nvec):
     prices_ss = firm_price(r_ss,w_ss)
     minimum_ss = min_consump(prices_ss)
     com_price_ss = comp_price(prices_ss)
-    #guessvec = np.array([.35,.15])
     b_ss, c_ss, c_cstr, cm_opt_ss, cm_opt_cstr, euler_error_ss = \
             get_cb(r_ss, w_ss, b_guess, prices_ss, com_price_ss, nvec)
     C_demand_ss = cm_opt_ss.sum(axis = 1)
@@ -339,8 +349,11 @@ def ss_solve_fsolve(rw_init, b_guess, nvec):
             C_demand_ss, Y_m_ss, K_demand_ss, L_demand_ss, SS_market_errors)
     
 
-rw_init = np.array(([4,.8]))
-bvec_guess = np.array((.1,.2, .2))
+#nvec = np.array((1.,1.,.2))
+nvec = np.ones(S)
+rw_init = np.array(([0.05,.5]))
+#bvec_guess = np.array((.1,.2))
+bvec_guess = np.ones(S)*0.01
 r_ss, w_ss, prices_ss, com_p_ss, b_ss, c_ss, cm_ss, eul_ss, C_demand_ss,\
         Y_m_ss, K_demand_ss, L_demand_ss, SS_market_errors = \
         ss_solve_fsolve(rw_init, bvec_guess, nvec)

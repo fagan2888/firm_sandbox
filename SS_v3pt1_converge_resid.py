@@ -63,7 +63,7 @@ TPImindist   = Cut-off distance between iterations for TPI
 '''
 
 #computational parameters
-maxiter = 1000
+maxiter = 10
 mindist_SS = 1e-9
 mu = 0.1
 
@@ -543,22 +543,13 @@ def Steady_State(guesses, mu):
 
 
         # Find factor demand from each industry as a function of factor supply
-        #k_m_guesses = (X/X.sum())*K_s
-        #l_m_guesses = (X/X.sum())*L_s
-        #K_d = opt.fsolve(solve_k, k_m_guesses, args=(p, p_k, K_s, X), xtol=1e-9, col_deriv=1)
-        #L_d = opt.fsolve(solve_l, l_m_guesses, args=(p, L_s, X), xtol=1e-9, col_deriv=1)
-
-
-        #### Need to solve for labor and capital demand from each industry
-        #K_d_check = get_k_demand(p_k, w, r, X)
-        #L_d_check = get_l_demand(p_k, w, r, K_d)
         K_d = get_k_demand(p_k, w, r, X)
         L_d = get_l_demand(p_k, w, r, K_d)
 
 
         # Find value of each firm V = DIV/r in SS
-        V = (p*X - w*L_d - p_k*delta*K_d)/r
-        #V = p_k*K_d
+        #V = (p*X - w*L_d - p_k*delta*K_d)/r
+        V = p_k*K_d
         print 'checking V two ways: ', V-(p_k*K_d)
 
         # find residual to determine labor and capital demand for one industry
@@ -571,18 +562,12 @@ def Steady_State(guesses, mu):
         L_d2[0]= max(L_s-L_d2[1:].sum(),0.01)
         V2[0] = max(K_s - V2[1:].sum(),0.01)
         #print 'checking resid.  K_s, K_resid: ', K_s, ((p*X - w*L_d2-r*V2)/(p_k*delta))[0]
-        K_d2[0] = max(((p*X - w*L_d2-r*V2)/(p_k*delta))[0],0.01)
+        #K_d2[0] = max(((p*X - w*L_d2-r*V2)/(p_k*delta))[0],0.01)
+        K_d2[0] = max((V2/p_k)[0],0.01)
 
         # Find implied r, w
-        X2 = get_X(K_d2,L_d2)
-        #r_new = get_r(X2,K_d2,p_k,p)[0]
-        r_new = get_r(X2,K_d2,p_k,p)[0]
-        #r_new = (p*X - w*L_d - p_k*delta*K_d).sum()/K_s
-        #X3 = get_X(K_d,L_d2)
-        #w_new = get_w(X3,L_d2,p)[0]
-        w_new = get_w(X2,L_d2,p)[0]
-        #r_new = (p*X - w*L_d - p_k*delta*K_d).sum()/K_s
-        #w_new = get_w(X, L_s, p)[0]
+        r_new = get_r(X,K_d2,p_k,p)[0]
+        w_new = get_w(X,L_d2,p)[0]
         
         #print 'checking r', get_r(X,K_d,p_k,p)-get_r(X,K_d_check,p_k,p)
         print 'interest rates by industry: ', get_r(X,K_d,p_k,p)

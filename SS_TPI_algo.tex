@@ -212,7 +212,7 @@ c_{i,j,s,t}  = \frac{\alpha_{i} \tilde{p}_{s,t}\tilde{c}_{j,s,t}}{p_{i,t}} + \ba
 	\begin{split}
 	X_{m,t} &= X^{c}_{m,t} + X^{i}_{m,t} \\
 	&= \sum_{i=1}^{I} \pi_{i,m}C_{i,t} +\sum_{j=1}^{M} \xi_{j,m}I_{j,t} \\
-	 &= \sum_{i=1}^{I} \pi_{i,m}C_{i,t} +\sum_{j=1}^{M} \xi_{j,m}\left(K_{j,t+1} - (1\delta_{j})K_{j,t} \right)  \\
+	 &= \sum_{i=1}^{I} \pi_{i,m}C_{i,t} +\sum_{j=1}^{M} \xi_{j,m}\left(K_{j,t+1} - (1-\delta_{j})K_{j,t} \right)  \\
 	 &= \sum_{i=1}^{I} \pi_{i,m}C_{i,t} ... \\
 	 & \quad +\sum_{j=1}^{M} \xi_{j,m}\left[\left( \frac{X_{j,t+1}}{A_{j,t+1}}\left[\gamma_{j}^{\frac{1}{\epsilon_{j}}}+(1-\gamma_{j})^{\frac{1}{\epsilon_{j}}}\left(\frac{r_{t+1}+\delta_{j}}{w_{t+1}}\right)^{\epsilon_{j}-1}\left(\frac{1-\gamma_{j}}{\gamma_{j}}\right)^{\frac{\epsilon_{j}-1}{\epsilon_{j}}}\right]^{\frac{\epsilon_{j}}{1-\epsilon_{j}}}\right) ... \right. \\
 	 & \left. \quad - (1-\delta_{j})\left( \frac{X_{j,t}}{A_{j,t}}\left[\gamma_{j}^{\frac{1}{\epsilon_{j}}}+(1-\gamma_{j})^{\frac{1}{\epsilon_{j}}}\left(\frac{r_{t}+\delta_{j}}{w_{t}}\right)^{\epsilon_{j}-1}\left(\frac{1-\gamma_{j}}{\gamma_{j}}	\right)^{\frac{\epsilon_{j}-1}{\epsilon_{j}}}\right]^{\frac{\epsilon_{j}}{1-\epsilon_{j}}}\right) \right]
@@ -220,7 +220,7 @@ c_{i,j,s,t}  = \frac{\alpha_{i} \tilde{p}_{s,t}\tilde{c}_{j,s,t}}{p_{i,t}} + \ba
 	\end{equation}
 	
 	\item The above is a system of $M\times T$ equations and $M\times T$ unknowns: a root finder can be used to solve for $X_{m,t}$
-	\item Alternatively, one can leverage the recursive nature of the problem.  In particular, since we know the steady state solution, we have $K_{m,T}$ for all $m$.  Thus we can find $I_{m,T-1} = K_{m,T} - (1\delta_{m})K_{m,T-1}$.  Then using the equations above, we can solve a system of $M$ equations and $M$ unknowns to find $X_{m,T-1}$.  We then repeat this for each period from $T-1$ back to the initial period.  This yields the time path of output demand, $X_{m,t}$ without having to solve a very large system of equations at once.
+	\item Alternatively, one can leverage the recursive nature of the problem.  In particular, since we know the steady state solution, we have $K_{m,T}$ for all $m$.  Thus we can find $I_{m,T-1} = K_{m,T} - (1-\delta_{m})K_{m,T-1}$.  Then using the equations above, we can solve a system of $M$ equations and $M$ unknowns to find $X_{m,T-1}$.  We then repeat this for each period from $T-1$ back to the initial period.  This yields the time path of output demand, $X_{m,t}$ without having to solve a very large system of equations at once.
 	\end{itemize}
 
 \item With the time path for output demand, $X_{m,t}$, and prices, we can solve for the demand for capital from each industry in each period $t$.  We'll use the capital market clearing condition ($\sum_{m=1}^{M} K_{m,t}=\sum_{j=1}^{J}\sum_{s=1}^{S} b_{j,s,t}$) and the firm's FOC for capital together to find these demands.  Denoting the supply of capital as $K^{s}_{t}=\sum_{j=1}^{J}\sum_{s=1}^{S} b_{j,s,t}$, we can start with the firm's FOC for its choice of capital:

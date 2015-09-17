@@ -436,6 +436,7 @@ def solve_k(guesses, p, p_k, K_s, X):
     
     error = p_k*K-K_s+x_func.sum()-x_func
 
+    #error = p_k*K - K_s + ((p_k*K).sum() - p_k*K )
     # Check and punish constraing violations
     mask1 = K <= 0
 
@@ -552,10 +553,11 @@ def Steady_State(guesses):
     #### Need to solve for labor and capital demand from each industry
     K_d_check = get_k_demand(p_k, w, r, X)
     L_d_check = get_l_demand(p_k, w, r, K_d)
-
+    print ' check cap demands: ', K_d_check-K_d
 
     # Find value of each firm V = DIV/r in SS
     V = (p*X - w*L_d - p_k*delta*K_d)/r
+    #V = p_k*K_d
 
     # Find implied r, w
     r_new = get_r(X,K_d,p_k,p)[0]
