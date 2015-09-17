@@ -46,9 +46,10 @@ epsilon = np.array((.55, .45))
 gamma = np.array((.5, .5))
 lamb = .1
 A = 1.0 # Total factor productivity
-S = 3 # periods in life of hh
+S = 4 # periods in life of hh
 I = 2 # number of consumption goods
 M = 2 # number of production industries
+nvec = np.array((1.,1.,1.,.2, ))
 
 
 
@@ -318,24 +319,28 @@ def ss_solve_fsolve(rw_init, b_guess, nvec):
     prices_ss = firm_price(r_ss,w_ss)
     minimum_ss = min_consump(prices_ss)
     com_price_ss = comp_price(prices_ss)
-    guessvec = np.array([.35,.15])
+    #guessvec = np.array([.35,.15])
     b_ss, c_ss, c_cstr, cm_opt_ss, cm_opt_cstr, euler_error_ss = \
             get_cb(r_ss, w_ss, b_guess, prices_ss, com_price_ss, nvec)
     C_demand_ss = cm_opt_ss.sum(axis = 1)
     Y_m_ss = get_Y(C_demand_ss, r_ss, w_ss)
     K_demand_ss = get_K(Y_m_ss, prices_ss, com_price_ss, r_ss, w_ss)
     L_demand_ss = get_L(K_demand_ss, r_ss, w_ss)
+    print L_demand_ss
+    k_res = calc_k_res(np.sum(b_ss), K_demand_ss)
+    l_res = calc_l_res(np.sum(nvec), L_demand_ss)
     k_error_ss = np.sum(K_demand_ss) - np.sum(b_ss)
     l_error_ss = np.sum(L_demand_ss) - np.sum(nvec)
     SS_market_errors = np.array([k_error_ss, l_error_ss])
+    print 'resource constraint', np.sum(Y_m_ss)
+
 
     return (r_ss, w_ss, prices_ss, com_price_ss, b_ss, c_ss, cm_opt_ss, euler_error_ss,
             C_demand_ss, Y_m_ss, K_demand_ss, L_demand_ss, SS_market_errors)
     
 
-nvec = np.array((1.,1.,.2))
 rw_init = np.array(([4,.8]))
-bvec_guess = np.array((.1,.2))
+bvec_guess = np.array((.1,.2, .2))
 r_ss, w_ss, prices_ss, com_p_ss, b_ss, c_ss, cm_ss, eul_ss, C_demand_ss,\
         Y_m_ss, K_demand_ss, L_demand_ss, SS_market_errors = \
         ss_solve_fsolve(rw_init, bvec_guess, nvec)
