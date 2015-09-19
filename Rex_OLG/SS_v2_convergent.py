@@ -43,7 +43,7 @@ alpha = np.array([0.5,1-0.5]) # preference parameter - share of good i in compos
 cbar = np.array([0.00, 0.00]) # min cons of each of I goods, shape =(I,)
 delta = .1
 epsilon = np.array((.55, .45))
-gamma = np.array((.5, .5))
+gamma = np.array((.4, .4))
 lamb = .1
 A = 1.0 # Total factor productivity
 S = 80 # periods in life of hh
@@ -121,11 +121,17 @@ def get_cb(r, w, b_guess, p_vec, p_comp, nvec):
 
     bvec = opt.fsolve(savings_euler, b_guess, args =(r, w, p_comp, p_vec, nvec))
     cvec, c_cstr = consumption(w,r,nvec, p_vec, p_comp, bvec)
-    cm_opt, cm_cstr = get_cm_optimal(cvec, p_comp, p_vec)
     eul_vec = get_b_errors(r, cvec, c_cstr)
-    return bvec, cvec, c_cstr, cm_opt, cm_cstr, eul_vec
+    return bvec, cvec, eul_vec
 
-def get_cm_optimal(cvec, p_comp, p_vec):
+def get_cm_mat(cvec, p_comp, p_vec):
+    '''
+    Inputs:
+        cvec, (S) consumption vector for individual
+        p_comp, (scaler) composite price of goods
+        p_vec, (M) price vector
+    Returns (2,S) matrix of individual consumption
+    '''
     c1vec = ((alpha[0] * p_comp * cvec)/p_vec[0])+ cbar[0]
     c2vec = ((alpha[1] * p_comp * cvec)/p_vec[1])+ cbar[1]
     cm_opt = np.vstack((c1vec, c2vec)) 
@@ -243,7 +249,7 @@ def calc_l_res(l_supply, l_demand):
         l_res = .00001
     return l_res
 
-def market_errors(rwvec, b_guess, nvec):
+def rw_errors(rwvec, b_guess, nvec):
     '''
     Returns the capital and labor market clearing errors
     given r,w
@@ -253,14 +259,15 @@ def market_errors(rwvec, b_guess, nvec):
         r_diff = 9999.
         w_diff = 9999.
     else:
+        # Solve household function
         p_vec = firm_price(r,w)
         p_comp = comp_price(p_vec)
-        bvec, cvec, c_cstr, cm_opt, c_opt_cstr, eulvec = \
+        bvec, cvec, eulvec = \
             get_cb(r, w, b_guess, p_vec, p_comp, nvec)
 
-        #Problem here with the bvec
-        C_demand = cm_opt.sum(axis = 1)
-        Y_m = get_Y(C_demand, r, w)
+        # 
+        C = cvec.sum()
+        Y_m = get_Y(C, r, w)
         Y_total = np.sum(Y_m)
         K_demand = get_K(Y_m, p_vec, p_comp, r, w)
         L_demand = get_L(K_demand, r, w)
@@ -276,13 +283,17 @@ def market_errors(rwvec, b_guess, nvec):
         w_diff = abs(wnew - w)
 
    
-    C_demand_ss = cm_opt_ss.sum(axis = 1)
-    Y_m_ss = get_Y(C_demand_ss, r_ss, w_ss)
-    K_demand_ss = get_K(Y_m_ss, prices_ss, com_price_ss, r_ss, w_ss)
-    L_demand_ss = get_L(K_demand_ss, r_ss, w_ss)
-    k_error_ss = np.sum(K_demand_ss) - np.sum(b_ss)
-    l_error_ss = np.sum(L_demand_ss) - np.sum(nvec)
-    SS_market_errors = np.array([k_error_ss, l_error_ss])
+    #C_m_mat, c_mat_cstr = get_cm_mat(cvec, p_comp, p_vec)
+    #C_m_ss = C_m_mat.sum(axis = 1)
+    #print C_m_ss
+    #raw_input()
+    #Y_m_ss = get_Y(C_m_ss, r_ss, w_ss)
+    #print Y_m_ss
+    #K_demand_ss = get_K(Y_m_ss, prices_ss, com_price_ss, r_ss, w_ss)
+    #L_demand_ss = get_L(K_demand_ss, r_ss, w_ss)
+    #k_error_ss = np.sum(K_demand_ss) - np.sum(b_ss)
+    #l_error_ss = np.sum(L_demand_ss) - np.sum(nvec)
+    #SS_market_errors = np.array([k_error_ss, l_error_ss])
 
 
         
@@ -325,7 +336,7 @@ def ss_solve_convex(rw_init,nvec):
         
 
 def ss_solve_fsolve(rw_init, b_guess, nvec):
-    rw_ss = opt.fsolve(market_errors, rw_init, args=(b_guess, nvec))
+    rw_ss = opt.fsolve(rw_errors, rw_init, args=(b_guess, nvec))
     r_ss, w_ss = rw_ss
     prices_ss = firm_price(r_ss,w_ss)
     minimum_ss = min_consump(prices_ss)
@@ -353,7 +364,7 @@ def ss_solve_fsolve(rw_init, b_guess, nvec):
 nvec = np.ones(S)
 rw_init = np.array(([0.05,.5]))
 #bvec_guess = np.array((.1,.2))
-bvec_guess = np.ones(S)*0.01
+bvec_guess = np.ones(S-1)*0.01
 r_ss, w_ss, prices_ss, com_p_ss, b_ss, c_ss, cm_ss, eul_ss, C_demand_ss,\
         Y_m_ss, K_demand_ss, L_demand_ss, SS_market_errors = \
         ss_solve_fsolve(rw_init, bvec_guess, nvec)
