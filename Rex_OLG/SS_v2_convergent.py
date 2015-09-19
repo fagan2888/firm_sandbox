@@ -297,8 +297,8 @@ def rw_errors(rwvec, b_guess, nvec):
 
 
         
-    market_errors = np.array((r_diff, w_diff))
-    return market_errors
+    rw_euler = np.array((r_diff, w_diff))
+    return rw_euler
 
 def ss_solve_convex(rw_init,nvec):
     error = 1
